@@ -52,15 +52,20 @@
     <section class="card">
       <div class="card__head"><h2>{% t "Botni ulash" %}</h2></div>
       <div class="card__body">
-<pre class="code-sample">curl -X POST {{ api_url }} \
-  -H "Authorization: Bearer &lt;kalit&gt;" \
-  -F "file=@app.apk" \
-  -F "profile_name=Ўткир" \
-  -F "username=@salom6233" \
-  -F "user_id=5907562354" \
-  -F "title=My music" \
-  -F "type=supergroup" \
-  -F "chat_id=-1003542328393"</pre>
+<pre class="code-sample">POST {{ api_url }}
+Authorization: Bearer &lt;kalit&gt;
+Content-Type: application/json
+
+{
+  "file_base64": "&lt;APK faylining Base64 qiymati&gt;",
+  "file_name": "app.apk",
+  "hash_value": "MVD yuborgan xesh qiymati",
+  "sender_id": "5907562354",
+  "sender_username": "@salom6233",
+  "chat_id": "-1003542328393",
+  "chat_title": "My music",
+  "created_at": "2026-11-05T12:30:00+05:00"
+}</pre>
       </div>
     </section>
   </div>

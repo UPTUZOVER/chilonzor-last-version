@@ -1,9 +1,9 @@
-"""MVD / Chilonzor rollari uchun loyihaning qolgan bo'limlarini yopadi.
+"""MVD / Chilonzor / Chilonzor Oper rollari uchun qolgan bo'limlarni yopadi.
 
 Menyudan yashirish yetarli emas - havolani qo'lda yozib kirish mumkin.
 Shuning uchun tekshiruv server tomonida, har bir so'rovda bajariladi.
 
-MVD / Chilonzor xodimi (admin bo'lmagan) uchun faqat:
+MVD / Chilonzor / Chilonzor Oper xodimi (admin bo'lmagan) uchun faqat:
   - /apk/...       (o'z bo'limi)
   - /messages/...  (bo'lim xabarnomalari shu yerga keladi)
   - login / logout / til almashtirish

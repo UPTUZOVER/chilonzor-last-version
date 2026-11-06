@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{% block title %}{% t "APK tahlil" %}{% endblock %} · Chilonzor</title>
+    <title>{% block title %}{% t "APK tahlil" %}{% endblock %} · Raqamli Qalqon</title>
     <meta name="color-scheme" content="light dark" />
     <script>
       /* Saqlangan mavzuni CSS yuklanishidan oldin qo'yish - sahifa "miltillamasin". */
@@ -15,17 +15,17 @@
       } catch (error) {}
     </script>
     <link rel="preload" href="{% static 'app/fonts/inter-latin.woff2' %}" as="font" type="font/woff2" crossorigin />
-    <link rel="stylesheet" href="{% static 'app/tokens.css' %}?v=20261102-13" />
-    <link rel="stylesheet" href="{% static 'app/styles.css' %}?v=20261103-1" />
+    <link rel="stylesheet" href="{% static 'app/tokens.css' %}?v=20261105-3" />
+    <link rel="stylesheet" href="{% static 'app/styles.css' %}?v=20261106-2" />
     <script src="{% static 'app/ui.js' %}?v=20261102-13" defer></script>
     {% block extra_head %}{% endblock %}
   </head>
-  <body>
+  <body class="{% block body_class %}{% endblock %}">
     <header class="topbar">
       <div class="topbar__inner">
         <a href="{% url 'app:home' %}" class="brand">
           {% include "app/_brand_mark.html" %}
-          <span class="brand__text">Chilonzor <span class="brand__sep">·</span> {% t "APK tahlil" %}</span>
+          <span class="brand__text">Raqamli Qalqon <span class="brand__sep">·</span> {% t "APK tahlil" %}</span>
         </a>
 
         {% if request.user.is_authenticated %}
@@ -34,9 +34,13 @@
         <nav class="nav" id="mainNav" aria-label="{% t 'Asosiy menyu' %}">
           {% block nav_extra %}{% endblock %}
 
+          {% if show_osint_nav %}
+          <a href="{% url 'apk:osint_tasks' %}" class="nav__link{% if request.resolver_match.url_name == 'osint_tasks' %} is-active{% endif %}">{% t "Akademiya" %}</a>
+          {% endif %}
+
           {% if show_apk_nav %}
           <a href="{% url 'apk:submission_list' %}"
-             class="nav__link{% if request.resolver_match.app_name == 'apk' and request.resolver_match.url_name != 'review_queue' and request.resolver_match.url_name != 'dashboard' %} is-active{% endif %}">
+             class="nav__link{% if request.resolver_match.app_name == 'apk' and request.resolver_match.url_name != 'review_queue' and request.resolver_match.url_name != 'dashboard' and request.resolver_match.url_name != 'osint_tasks' %} is-active{% endif %}">
             {% t "APK ishlar" %}
             {% if apk_returned_count %}
               <span class="nav__badge nav__badge--danger" title="{% t 'Tuzatish uchun qaytarilgan' %}">{{ apk_returned_count }}</span>
@@ -52,9 +56,10 @@
               <span class="nav__badge" title="{% t 'Qaror kutmoqda' %}">{% if apk_review_count > 99 %}99+{% else %}{{ apk_review_count }}{% endif %}</span>
             {% endif %}
           </a>
+          <a href="{% url 'apk:chilonzor_team' %}" class="nav__link{% if request.resolver_match.url_name == 'chilonzor_team' or request.resolver_match.url_name == 'chilonzor_employee_history' %} is-active{% endif %}">{% t "Chilonzor jamoasi" %}</a>
           {% endif %}
 
-          {% if request.user.is_staff or is_chilonzor_user or apk_role_label == "MVD" %}
+          {% if request.user.is_staff or is_chilonzor_user or is_kursant_user or apk_role_label == "MVD" %}
           <a href="{% url 'apk:dashboard' %}" class="nav__link{% if request.resolver_match.url_name == 'dashboard' %} is-active{% endif %}">{% t "Statistika" %}</a>
           {% endif %}
           {% endif %}

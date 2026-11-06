@@ -1,0 +1,38 @@
+{% extends "app/base.html" %}
+{% load ui_i18n %}
+
+{% block title %}{% t "Xodim ishlarining tarixi" %} — {{ employee }}{% endblock %}
+
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1>{{ employee }} <span class="muted">({{ employee.account.username }})</span></h1>
+    <p class="page-head__desc">{% t "Xodim ishtirok etgan APK ishlar va ularning to'liq tarixi." %}</p>
+  </div>
+  <a href="{% url 'apk:chilonzor_team' %}" class="btn">{% t "Jamoaga qaytish" %}</a>
+</header>
+
+<section class="table-card">
+  <table class="table table--stack">
+    <thead>
+      <tr><th class="col-num">#</th><th>{% t "APK / havola" %}</th><th>{% t "Kursant" %}</th><th>{% t "Holat" %}</th><th>{% t "Topilmalar" %}</th><th>{% t "Oxirgi o'zgarish" %}</th><th class="col-arrow"></th></tr>
+    </thead>
+    <tbody>
+      {% for item in submissions %}
+        <tr>
+          <td class="col-num" data-label="#">{{ item.pk }}</td>
+          <td data-label="{% t 'APK / havola' %}"><strong>{{ item.file_name }}</strong><span class="cell-sub">{{ item.chat_title|default:"-" }}</span></td>
+          <td data-label="{% t 'Kursant' %}">{{ item.assigned_to|default:"-" }}</td>
+          <td data-label="{% t 'Holat' %}"><span class="status {{ item.status_color }}">{{ item.status_label }}</span></td>
+          <td data-label="{% t 'IP / Domen / TG' %}">{{ item.ip_count }} / {{ item.domain_count }} / {{ item.telegram_count }}</td>
+          <td data-label="{% t "Oxirgi o'zgarish" %}">{{ item.updated_at|date:"d.m.Y H:i" }}</td>
+          <td class="col-arrow" data-label=""><a class="employee-open" href="{% url 'apk:submission_detail' item.pk %}" aria-label="{% t "Ish tarixi va ma'lumotlarini ochish" %}">→</a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7" class="empty" data-label="">{% t "Xodim ishtirok etgan ishlar hozircha yo'q." %}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% include "apk/_pager.html" %}
+</section>
+{% endblock %}

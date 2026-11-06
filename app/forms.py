@@ -20,7 +20,15 @@ from .ui_i18n import (
 )
 
 User = get_user_model()
-PUBLIC_REGISTRATION_BLOCKED_GROUPS = ()
+PUBLIC_REGISTRATION_BLOCKED_GROUPS = (
+    "MVD",
+    "Chilonzor",
+    "chilonzor_oper",
+    "chilonzor_hub",
+    "Chilonzor admin 01",
+    "Chilonzor admin 02",
+    "Chilonzor admin 03",
+)
 
 
 def get_public_registration_group_queryset():

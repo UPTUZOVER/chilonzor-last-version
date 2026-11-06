@@ -1,7 +1,7 @@
-"""Kursant kiritgan IP, domen va Telegram ID qiymatlarini tekshirish va bir xil ko'rinishga keltirish.
+"""Kursant kiritgan IP, domen va Telegram ID qiymatlarini bir xil ko'rinishga keltirish.
 
-Bir xil qiymat turlicha yozilib ("Example.COM", "http://example.com/x") qolmasligi
-kerak - aks holda takrorlanishlarni topib bo'lmaydi."""
+Tanish formatlar normalizatsiya qilinadi. Formatga mos kelmagan bo'sh bo'lmagan qiymatlar
+kursant tanlagan ustunda aynan kiritilgan ko'rinishida saqlanadi."""
 
 import ipaddress
 import re
@@ -131,21 +131,21 @@ def normalize_finding(kind, raw):
 
 
 def parse_lines(kind, text):
-    """Ko'p qatorli matnni tekshiradi: (to'g'ri qiymatlar, [(qator, xato), ...]).
+    """Ko'p qatorli matnni ajratadi: (qiymatlar, [(qator, xato), ...]).
 
-    Bo'sh qatorlar o'tkazib yuboriladi, takrorlar bittaga qisqartiriladi."""
+    Bo'sh qatorlar o'tkazib yuboriladi, takrorlar bittaga qisqartiriladi. Tanish
+    formatlar normallashtiriladi; noma'lum yoki nostandart qiymat xomligicha olinadi."""
     values = []
     errors = []
     seen = set()
     for line in (text or "").splitlines():
-        line = line.strip().strip(",;")
+        line = line.strip()
         if not line:
             continue
         try:
             value = normalize_finding(kind, line)
-        except ValueError as exc:
-            errors.append((line, str(exc)))
-            continue
+        except ValueError:
+            value = line
         if value not in seen:
             seen.add(value)
             values.append(value)

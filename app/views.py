@@ -29,6 +29,19 @@ from .ui_i18n import (
     translate,
 )
 
+SYSTEM_ROLE_GROUP_NAMES = frozenset(
+    name.casefold()
+    for name in (
+        "MVD",
+        "Chilonzor",
+        "chilonzor_oper",
+        "chilonzor_hub",
+        "Chilonzor admin 01",
+        "Chilonzor admin 02",
+        "Chilonzor admin 03",
+    )
+)
+
 
 def post_rate_limit(limit=5, timeout=60):
     def decorator(view_func):
@@ -87,11 +100,18 @@ def set_language_view(request):
 def home_view(request):
     """Bosh sahifa: APK bo'limiga ruxsati borlar to'g'ridan-to'g'ri o'sha yerga
     yuboriladi, qolganlar ruxsat yo'qligi haqidagi sahifani ko'radi."""
-    from apk.permissions import user_has_apk_access
+    from apk.permissions import user_has_apk_access, user_is_osint_kursant
 
+    is_osint_kursant = user_is_osint_kursant(request.user)
+    if is_osint_kursant and not request.user.is_staff:
+        return redirect("apk:osint_tasks")
     if user_has_apk_access(request.user):
         return redirect("apk:home")
-    return render(request, "app/no_access.html")
+    return render(
+        request,
+        "app/no_access.html",
+        {"is_osint_kursant": is_osint_kursant},
+    )
 
 
 def get_or_create_profile(user):
@@ -128,7 +148,7 @@ def account_has_group(account, group_name):
 
 
 def get_role_label_for_account(account):
-    """Ro'yxatda ko'rinadigan rol: Admin / MVD / Chilonzor / Kursant (bir nechtasi bo'lishi mumkin)."""
+    """Ro'yxatda ko'rinadigan rol: Admin, guruh roli yoki kursant turi."""
     if not account:
         return translate("Foydalanuvchi")
     from apk.permissions import get_role_label
@@ -333,7 +353,9 @@ def group_list_view(request):
     if blocked_response:
         return blocked_response
 
-    groups = Group.objects.annotate(member_count=Count("user")).order_by("name")
+    groups = list(Group.objects.annotate(member_count=Count("user")).order_by("name"))
+    for group in groups:
+        group.is_system_role = group.name.casefold() in SYSTEM_ROLE_GROUP_NAMES
     return render(request, "app/group_list.html", {"groups": groups})
 
 
@@ -368,6 +390,9 @@ def group_update_view(request, pk):
         return blocked_response
 
     group = get_object_or_404(Group, pk=pk)
+    if group.name.casefold() in SYSTEM_ROLE_GROUP_NAMES:
+        messages.error(request, translate("Tizim rolini bildiradigan guruhni o'zgartirib yoki o'chirib bo'lmaydi."))
+        return redirect("app:group_list")
     form = GroupManageForm(request.POST or None, instance=group)
     if request.method == "POST" and form.is_valid():
         form.save()
@@ -393,6 +418,9 @@ def group_delete_view(request, pk):
         return blocked_response
 
     group = get_object_or_404(Group, pk=pk)
+    if group.name.casefold() in SYSTEM_ROLE_GROUP_NAMES:
+        messages.error(request, translate("Tizim rolini bildiradigan guruhni o'zgartirib yoki o'chirib bo'lmaydi."))
+        return redirect("app:group_list")
     if request.method == "POST":
         group.delete()
         messages.success(request, translate("Guruh o'chirildi."))

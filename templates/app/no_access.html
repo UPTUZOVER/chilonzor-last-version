@@ -8,9 +8,17 @@
   <div class="auth__card">
     <div class="auth__brand">
       {% include "app/_brand_mark.html" %}
-      <h1>{% t "Hisobingizga hali rol berilmagan" %}</h1>
+      {% if is_osint_kursant %}
+        <h1>{% t "OSINT kursant" %}</h1>
+      {% else %}
+        <h1>{% t "Hisobingizga hali rol berilmagan" %}</h1>
+      {% endif %}
     </div>
-    <p class="muted">{% t "Administrator sizni kursant qilib qo'shgach yoki MVD / Chilonzor guruhiga biriktirgach, APK tahlil bo'limi ochiladi." %}</p>
+    {% if is_osint_kursant %}
+      <p class="muted">{% t "Siz OSINT kursant sifatida biriktirilgansiz. APK tahlil bo'limi ushbu hisob uchun ochiq emas." %}</p>
+    {% else %}
+      <p class="muted">{% t "Administrator sizni kursant qilib qo'shgach yoki MVD / Chilonzor guruhiga biriktirgach, APK tahlil bo'limi ochiladi." %}</p>
+    {% endif %}
     <p class="auth__note">{% t "Muammo bo'lsa administratorga murojaat qiling." %}</p>
   </div>
 </section>

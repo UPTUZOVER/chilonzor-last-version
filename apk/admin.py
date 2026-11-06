@@ -5,8 +5,8 @@ from .models import ApiClient, ApkEvent, ApkFinding, ApkSubmission, Kursant
 
 @admin.register(Kursant)
 class KursantAdmin(admin.ModelAdmin):
-    list_display = ("user", "team", "sort_order", "is_active")
-    list_filter = ("is_active", "team")
+    list_display = ("user", "kind", "team", "sort_order", "osint_points", "is_active")
+    list_filter = ("kind", "is_active", "team")
 
 
 class ApkFindingInline(admin.TabularInline):
@@ -18,10 +18,10 @@ class ApkFindingInline(admin.TabularInline):
 @admin.register(ApkSubmission)
 class ApkSubmissionAdmin(admin.ModelAdmin):
     list_display = (
-        "id", "file_name", "status", "assigned_to", "sender_username", "chat_title", "created_at",
+        "id", "file_name", "source_type", "status", "assigned_to", "sender_username", "chat_title", "created_at",
     )
-    list_filter = ("status",)
-    search_fields = ("file_name", "sha256", "sender_name", "sender_username", "chat_title")
+    list_filter = ("source_type", "status")
+    search_fields = ("file_name", "source_url", "sha256", "sender_name", "sender_username", "chat_title")
     readonly_fields = ("sha256", "file_size", "created_at", "updated_at")
     raw_id_fields = ("assigned_to", "source", "reviewed_by", "duplicate_of")
     inlines = [ApkFindingInline]

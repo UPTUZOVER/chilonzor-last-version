@@ -7,7 +7,7 @@
 <header class="page-head">
   <div>
     <h1>{% t "APK ishlar" %}</h1>
-    <p class="page-head__desc">{% t "Botdan kelgan APK fayllar. Kursant ishni oladi, IP, domen va Telegram ID topib Chilonzorga yuboradi." %}</p>
+    <p class="page-head__desc">{% t "Botdan kelgan APK fayllar. APK kursant ishni oladi, IP, domen va Telegram ID topib Chilonzorga yuboradi." %}</p>
   </div>
   <div class="page-head__actions">
     <details class="legend">
@@ -23,7 +23,6 @@
     </details>
     {% if can_manage %}
       <a href="{% url 'apk:kursant_list' %}" class="btn">{% t "Kursantlar" %}</a>
-      <a href="{% url 'apk:api_clients' %}" class="btn">{% t "API kalitlari" %}</a>
     {% endif %}
   </div>
 </header>
@@ -85,14 +84,21 @@
             {% endif %}
           </td>
           <td class="col-action" data-label="">
-            {% if item.status == "new" and is_kursant_user %}
-              <form method="post" action="{% url 'apk:submission_claim' item.pk %}" class="inline-form">
-                {% csrf_token %}
-                <button type="submit" class="btn btn--sm">{% t "Olish" %}</button>
-              </form>
-            {% elif item.assigned_to_id == current_profile.pk %}
-              <span class="meta">{% t "Sizda" %}</span>
-            {% endif %}
+            <div class="row-actions">
+              {% if item.is_link %}
+                <a href="{{ item.source_url }}" class="btn btn--sm" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">↗</span> {% t "Havolani ochish" %}</a>
+              {% else %}
+                <a href="{% url 'apk:submission_download' item.pk %}" class="btn btn--sm" title="{% t 'APK faylini yuklab olish' %}"><span aria-hidden="true">↓</span> {% t "Yuklab olish" %}</a>
+              {% endif %}
+              {% if item.status == "new" and is_kursant_user %}
+                <form method="post" action="{% url 'apk:submission_claim' item.pk %}" class="inline-form">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn--sm">{% t "Olish" %}</button>
+                </form>
+              {% elif item.assigned_to_id == current_profile.pk %}
+                <span class="meta">{% t "Sizda" %}</span>
+              {% endif %}
+            </div>
           </td>
         </tr>
       {% empty %}

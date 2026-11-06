@@ -1,156 +1,157 @@
 {% extends "app/base.html" %}
 {% load ui_i18n %}
 
-{% block title %}{% t "Statistika" %}{% endblock %}
+{% block title %}{{ role_title }}{% endblock %}
 
 {% block content %}
-<header class="page-head">
-  <div>
-    <h1>{% t "Statistika" %}</h1>
-    <p class="page-head__desc">{% t "Barcha APK ishlar bo'yicha umumiy holat. Ma'lumot sahifa ochilgan paytdagi holatda." %}</p>
+<header class="dashboard-head">
+  <div class="dashboard-head__copy">
+    <span class="dashboard-eyebrow">RAQAMLI QALQON <span>•</span> {% t "APK TAHLIL" %}</span>
+    <h1>{{ role_title }}</h1>
+    <p>{{ role_description }}</p>
   </div>
-  <div class="page-head__actions">
+  <div class="dashboard-head__actions">
+    {% if role == "chilonzor" or role == "admin" %}
+      <a href="{% url 'apk:review_queue' %}" class="btn">{% t "Ko'rib chiqish navbati" %}</a>
+    {% endif %}
     <a href="{% url 'apk:submission_list' %}" class="btn">{% t "APK ishlar" %}</a>
-    <a href="{% url 'apk:review_queue' %}" class="btn">{% t "Ko'rib chiqish" %}</a>
+    <a href="{% url 'apk:dashboard_report' %}?period={{ period_days }}" class="btn btn--primary dashboard-download">
+      <span aria-hidden="true">↓</span> {% t "Word hisobotini yuklab olish" %}
+    </a>
   </div>
 </header>
 
-<div class="stack">
-  <section class="kpi-grid" aria-label="{% t "Asosiy ko'rsatkichlar" %}">
-    <article class="kpi">
-      <span class="kpi__label">{% t "Jami APK" %}</span>
-      <strong class="kpi__value">{{ total }}</strong>
-      <span class="kpi__sub">{% t "so'nggi 7 kunda" %}: {{ week_count }}{% if week_delta > 0 %} (+{{ week_delta }}){% elif week_delta < 0 %} ({{ week_delta }}){% endif %}</span>
-    </article>
-    <article class="kpi{% if new_count %} is-alert{% endif %}">
-      <span class="kpi__label">{% t "Olinmagan" %}</span>
-      <strong class="kpi__value">{{ new_count }}</strong>
-      <span class="kpi__sub">{% t "kursant kutmoqda" %}</span>
-    </article>
-    <article class="kpi">
-      <span class="kpi__label">{% t "Tahlilda" %}</span>
-      <strong class="kpi__value">{{ in_progress_count }}</strong>
-      <span class="kpi__sub">{% t "kursantlar ishlamoqda" %}</span>
-    </article>
-    <article class="kpi{% if sent_count %} is-alert{% endif %}">
-      <span class="kpi__label">{% t "Chilonzorda" %}</span>
-      <strong class="kpi__value">{{ sent_count }}</strong>
-      <span class="kpi__sub">{% t "qaror kutmoqda" %}</span>
-    </article>
-    <article class="kpi">
-      <span class="kpi__label">{% t "Qaytarilgan" %}</span>
-      <strong class="kpi__value">{{ returned_count }}</strong>
-      <span class="kpi__sub">{% t "tuzatilmoqda" %}</span>
-    </article>
-    <article class="kpi is-good">
-      <span class="kpi__label">{% t "Qabul qilingan" %}</span>
-      <strong class="kpi__value">{{ accepted_count }}</strong>
-      <span class="kpi__sub">{% t "yakunlangan" %}</span>
-    </article>
+<div class="stack dashboard-stack">
+  <section class="kpi-grid dashboard-kpis" aria-label="{% t 'Dashboard metrikalari' %}">
+    {% for item in kpis %}
+      <article class="dashboard-kpi dashboard-kpi--{{ item.tone }}">
+        <span class="dashboard-kpi__label">{{ item.label }}</span>
+        <strong class="dashboard-kpi__value">{{ item.value }}</strong>
+        <span class="dashboard-kpi__hint">{{ item.hint }}</span>
+      </article>
+    {% endfor %}
   </section>
 
-  <section class="card">
-    <div class="card__head">
-      <h2>{% t "Bir nechta APK da uchragan qiymatlar" %}</h2>
-      <span class="meta">{% t "bir manbaga ishora qilishi mumkin" %}</span>
+  <section class="dashboard-toolbar" aria-label="{% t 'Hisobot sozlamalari' %}">
+    <div>
+      <strong>{% t "Davr bo'yicha tahlil" %}</strong>
+      <span>{% if role == "chilonzor" %}{% t "Qaror va ustunli grafiklar tanlangan davr uchun." %}{% else %}{% t "Doira diagramma jami ishlarni, ustunli grafik esa tanlangan davrni ko'rsatadi." %}{% endif %}</span>
     </div>
-    <div class="card__body">
-      {% if has_repeated %}
-        <div class="repeat-grid">
-          {% for group in repeated_groups %}
-            <div>
-              <h3>{{ group.label }} <span class="meta">{% t "APK soni" %}</span></h3>
-              {% if group.items %}
-                <ul class="repeat-list">
-                  {% for item in group.items %}
-                    <li>
-                      <a href="{% url 'apk:submission_list' %}?q={{ item.value|urlencode }}"><code>{{ item.value }}</code></a>
-                      <strong>{{ item.count }}</strong>
-                    </li>
-                  {% endfor %}
-                </ul>
-              {% else %}
-                <p class="meta">—</p>
-              {% endif %}
-            </div>
-          {% endfor %}
-        </div>
-      {% else %}
-        <p class="muted">{% t "Hozircha bir nechta APK da takrorlangan qiymat yo'q." %}</p>
-      {% endif %}
-      <p class="meta card__note">
-        {% t "Noyob qiymatlar" %}:
-        {% for card in finding_cards %}{{ card.label }} — <strong>{{ card.count }}</strong>{% if not forloop.last %} · {% endif %}{% endfor %}
-      </p>
-    </div>
-  </section>
-
-  <div class="grid-2">
-    <section class="card">
-      <div class="card__head"><h2>{% t "Holatlar" %}</h2><span class="meta">{% t "jami" %} {{ total }}</span></div>
-      <div class="card__body statbars">
-        {% for row in status_rows %}
-          <div class="statbar">
-            <span>{{ row.label }}</span>
-            <span class="statbar__track"><span class="statbar__fill {{ row.color }}" style="--w: {{ row.share }}%"></span></span>
-            <span class="statbar__value">{{ row.count }}</span>
-            <span class="statbar__share">{{ row.share }}%</span>
-          </div>
+    <form method="get" class="dashboard-period">
+      <label for="dashboardPeriod">{% t "Davr" %}</label>
+      <select id="dashboardPeriod" name="period" onchange="this.form.submit()">
+        {% for option in period_options %}
+          <option value="{{ option.days }}"{% if option.selected %} selected{% endif %}>{{ option.days }} {% t "kun" %}</option>
         {% endfor %}
-      </div>
-    </section>
+      </select>
+    </form>
+  </section>
 
-    <section class="card">
-      <div class="card__head"><h2>{% t "So'nggi 14 kun" %}</h2><span class="meta">{% t "kuniga kelgan APK" %}</span></div>
-      <div class="card__body">
-        <div class="vbars" role="img" aria-label="{% t "So'nggi 14 kunda kunlik kelgan APK soni" %}">
-          {% for item in daily %}
-            <div class="vbar" style="--h: {{ item.height }}%" title="{{ item.day|date:'d.m.Y' }}: {{ item.count }}">
-              <span class="vbar__value">{{ item.count }}</span>
-              <span class="vbar__fill"></span>
-            </div>
-          {% endfor %}
-        </div>
-        <div class="vbars__labels" aria-hidden="true">
-          {% for item in daily %}<span>{{ item.day|date:"d.m" }}</span>{% endfor %}
+  <div class="dashboard-chart-grid">
+    <section class="card dashboard-card">
+      <div class="card__head dashboard-card__head">
+        <div><h2>{% if role == "chilonzor" %}{% t "Qarorlar taqsimoti" %}{% else %}{% t "Ishlar holati" %}{% endif %}</h2>
+          <span class="meta">{% if role == "chilonzor" %}{{ period_days }} {% t "kun" %}{% else %}{% t "Barcha vaqt" %}{% endif %}</span>
         </div>
       </div>
-    </section>
-  </div>
-
-  <div class="grid-2">
-    <section class="card">
-      <div class="card__head"><h2>{% t "Kursantlar" %}</h2></div>
-      <table class="table">
-        <thead>
-          <tr><th scope="col">{% t "Kursant" %}</th><th class="col-count" scope="col">{% t "Ishda" %}</th><th class="col-count" scope="col">{% t "Qabul qilingan" %}</th></tr>
-        </thead>
-        <tbody>
-          {% for kursant in kursants %}
-            <tr><td>{{ kursant.user }}</td><td class="col-count">{{ kursant.active_count }}</td><td class="col-count">{{ kursant.accepted_count }}</td></tr>
-          {% empty %}
-            <tr><td colspan="3" class="empty">{% t "Kursant yo'q." %}</td></tr>
+      <div class="card__body dashboard-donut-layout">
+        <div class="dashboard-donut-wrap">
+          <svg class="dashboard-donut" viewBox="0 0 100 100" role="img" aria-label="{% t 'Doira diagramma' %}">
+            <circle cx="50" cy="50" r="40" fill="none" stroke="var(--c-border)" stroke-width="12"></circle>
+            {% for row in chart_rows %}
+              {% if row.count %}<circle cx="50" cy="50" r="40" fill="none" stroke="{{ row.color }}" stroke-width="12" stroke-dasharray="{{ row.dasharray }}" stroke-dashoffset="{{ row.dashoffset }}" transform="rotate(-90 50 50)"></circle>{% endif %}
+            {% endfor %}
+            <circle cx="50" cy="50" r="29" fill="var(--c-surface)"></circle>
+            <text x="50" y="48" text-anchor="middle" class="dashboard-donut__number">{{ chart_total }}</text>
+            <text x="50" y="61" text-anchor="middle" class="dashboard-donut__caption">{% if role == "chilonzor" %}{% t "qaror" %}{% else %}{% t "ish" %}{% endif %}</text>
+          </svg>
+        </div>
+        <ul class="dashboard-legend">
+          {% for row in chart_rows %}
+            <li><span class="dashboard-legend__dot" style="--legend-color:{{ row.color }}"></span><span class="dashboard-legend__label">{{ row.label }}</span><strong>{{ row.count }}</strong><small>{{ row.share }}%</small></li>
           {% endfor %}
-        </tbody>
-      </table>
-    </section>
-
-    <section class="card">
-      <div class="card__head"><h2>{% t "So'nggi harakatlar" %}</h2></div>
-      <div class="card__body">
-        <ul class="history">
-          {% for event in recent_events %}
-            <li>
-              <span class="history__time">{{ event.created_at|date:"d.m.Y H:i" }}</span>
-              <a href="{% url 'apk:submission_detail' event.submission_id %}">#{{ event.submission_id }}</a>
-              <strong>{{ event.action_label }}</strong>{% if event.actor %} · {{ event.actor }}{% endif %}
-            </li>
-          {% empty %}
-            <li class="muted">{% t "Hozircha harakat yo'q." %}</li>
-          {% endfor %}
+          {% if not chart_total %}<li class="dashboard-empty">{% t "Hozircha ma'lumot yo'q." %}</li>{% endif %}
         </ul>
       </div>
     </section>
+
+    <section class="card dashboard-card">
+      <div class="card__head dashboard-card__head">
+        <div><h2>{{ trend_title }}</h2><span class="meta">{{ period_start|date:"d.m.Y" }} — {{ period_end|date:"d.m.Y" }}</span></div>
+        <span class="dashboard-chart-mark" aria-hidden="true">▥</span>
+      </div>
+      <div class="card__body">
+        <div class="dashboard-column-chart" role="img" aria-label="{{ trend_title }}">
+          {% for item in daily %}
+            <div class="dashboard-column" title="{{ item.day|date:'d.m.Y' }}: {{ item.count }}">
+              <span class="dashboard-column__value">{{ item.count }}</span>
+              <span class="dashboard-column__track"><span class="dashboard-column__fill" style="--bar-height:{{ item.height }}%"></span></span>
+              <time datetime="{{ item.day|date:'Y-m-d' }}">{{ item.day|date:"d.m" }}</time>
+            </div>
+          {% endfor %}
+        </div>
+        {% if not trend_max %}<p class="dashboard-empty dashboard-empty--chart">{% t "Tanlangan davrda harakat bo'lmagan." %}</p>{% endif %}
+      </div>
+    </section>
   </div>
+
+  {% if role == "admin" %}
+    <div class="dashboard-lower-grid">
+      <section class="card dashboard-card dashboard-card--wide">
+        <div class="card__head dashboard-card__head"><div><h2>{% t "Kursantlar faoliyati" %}</h2><span class="meta">{% t "Faol ishlar va yakunlangan tahlillar" %}</span></div></div>
+        <div class="table-wrap"><table class="table dashboard-table">
+          <thead><tr><th>{% t "Kursant" %}</th><th class="col-count">{% t "Faol" %}</th><th class="col-count">{% t "Qabul qilingan" %}</th><th class="col-count">{% t "Qaytarilgan" %}</th></tr></thead>
+          <tbody>{% for row in performance_rows %}<tr><td>{{ row.name }}</td><td class="col-count">{{ row.active }}</td><td class="col-count">{{ row.accepted }}</td><td class="col-count">{{ row.returned }}</td></tr>{% empty %}<tr><td colspan="4" class="empty">{% t "Kursantlar topilmadi." %}</td></tr>{% endfor %}</tbody>
+        </table></div>
+      </section>
+    </div>
+  {% elif role == "mvd" %}
+    <section class="card dashboard-card">
+      <div class="card__head dashboard-card__head"><div><h2>{{ extra_title }}</h2><span class="meta">{% t "Eng ko'p yuborgan manbalar" %}</span></div></div>
+      <div class="table-wrap"><table class="table dashboard-table"><thead><tr><th>{% t "Manba" %}</th><th class="col-count">{% t "Yuborilgan APK" %}</th></tr></thead>
+        <tbody>{% for row in source_rows %}<tr><td>{{ row.name }}</td><td class="col-count">{{ row.count }}</td></tr>{% empty %}<tr><td colspan="2" class="empty">{% t "Manba ma'lumoti yo'q." %}</td></tr>{% endfor %}</tbody></table></div>
+    </section>
+  {% elif role == "chilonzor" %}
+    <section class="card dashboard-card">
+      <div class="card__head dashboard-card__head"><div><h2>{{ extra_title }}</h2><span class="meta">{% t "Eng eski yuborilgan ishlar birinchi ko'rsatiladi" %}</span></div><a href="{% url 'apk:review_queue' %}" class="btn">{% t "Navbatni ochish" %}</a></div>
+      <div class="table-wrap"><table class="table dashboard-table"><thead><tr><th>{% t "APK ishi" %}</th><th>{% t "Kursant" %}</th><th>{% t "Kutgan vaqt" %}</th><th>{% t "Holat" %}</th></tr></thead>
+        <tbody>{% for row in waiting_rows %}<tr><td><a href="{% url 'apk:submission_detail' row.submission.pk %}">#{{ row.submission.pk }} · {{ row.submission.file_name }}</a></td><td>{{ row.submission.assigned_to|default:"—" }}</td><td>{% if row.overdue %}<strong class="dashboard-overdue">{{ row.waiting }}</strong>{% else %}{{ row.waiting }}{% endif %}</td><td><span class="status {{ row.submission.status_color }}">{{ row.submission.status_label }}</span></td></tr>{% empty %}<tr><td colspan="4" class="empty">{% t "Ko'rib chiqish navbati bo'sh." %}</td></tr>{% endfor %}</tbody></table></div>
+    </section>
+  {% elif role == "kursant" %}
+    <section class="card dashboard-card">
+      <div class="card__head dashboard-card__head"><div><h2>{{ extra_title }}</h2><span class="meta">{% t "Qaytarish izohi va ish holati" %}</span></div><a href="{% url 'apk:submission_list' %}" class="btn">{% t "Ishlarimni ochish" %}</a></div>
+      <div class="table-wrap"><table class="table dashboard-table"><thead><tr><th>{% t "APK ishi" %}</th><th>{% t "Qaytarish sababi" %}</th><th>{% t "Yangilangan" %}</th></tr></thead>
+        <tbody>{% for row in extra_rows %}<tr><td><a href="{% url 'apk:submission_detail' row.pk %}">#{{ row.pk }} · {{ row.file_name }}</a></td><td>{{ row.review_note|default:"—"|truncatechars:110 }}</td><td>{{ row.updated_at|date:"d.m.Y H:i" }}</td></tr>{% empty %}<tr><td colspan="3" class="empty">{% t "Hozircha qaytarilgan ish yo'q." %}</td></tr>{% endfor %}</tbody></table></div>
+    </section>
+  {% endif %}
+
+  <div class="dashboard-lower-grid">
+    <section class="card dashboard-card">
+      <div class="card__head dashboard-card__head"><div><h2>{% t "Topilmalar tarkibi" %}</h2><span class="meta">{% t "Tahlillarga kiritilgan qiymatlar" %}</span></div></div>
+      <div class="card__body dashboard-donut-layout dashboard-donut-layout--compact">
+        <div class="dashboard-donut-wrap"><svg class="dashboard-donut" viewBox="0 0 100 100" role="img" aria-label="{% t 'Topilmalar diagrammasi' %}">
+          <circle cx="50" cy="50" r="40" fill="none" stroke="var(--c-border)" stroke-width="12"></circle>
+          {% for row in finding_chart %}{% if row.count %}<circle cx="50" cy="50" r="40" fill="none" stroke="{{ row.color }}" stroke-width="12" stroke-dasharray="{{ row.dasharray }}" stroke-dashoffset="{{ row.dashoffset }}" transform="rotate(-90 50 50)"></circle>{% endif %}{% endfor %}
+          <circle cx="50" cy="50" r="29" fill="var(--c-surface)"></circle><text x="50" y="48" text-anchor="middle" class="dashboard-donut__number">{{ finding_chart_total }}</text><text x="50" y="61" text-anchor="middle" class="dashboard-donut__caption">{% t "topilma" %}</text>
+        </svg></div>
+        <ul class="dashboard-legend">{% for row in finding_chart %}<li><span class="dashboard-legend__dot" style="--legend-color:{{ row.color }}"></span><span class="dashboard-legend__label">{{ row.label }}</span><strong>{{ row.count }}</strong></li>{% endfor %}</ul>
+      </div>
+    </section>
+    <section class="card dashboard-card">
+      <div class="card__head dashboard-card__head"><div><h2>{% t "Takrorlangan topilmalar" %}</h2><span class="meta">{% t "Ikki yoki undan ko'p APKda uchragan" %}</span></div></div>
+      <div class="card__body dashboard-repeats">
+        {% if has_repeated %}{% for group in repeated_groups %}{% if group.items %}<div><h3>{{ group.label }}</h3><ul>{% for item in group.items %}<li><a href="{% url 'apk:submission_list' %}?q={{ item.value|urlencode }}"><code>{{ item.value }}</code></a><span>{{ item.count }} {% t "APK" %}</span></li>{% endfor %}</ul></div>{% endif %}{% endfor %}{% else %}<p class="muted">{% t "Takrorlangan qiymatlar hozircha topilmadi." %}</p>{% endif %}
+      </div>
+    </section>
+  </div>
+
+  <section class="card dashboard-card">
+    <div class="card__head dashboard-card__head"><div><h2>{% t "So'nggi harakatlar" %}</h2><span class="meta">{% t "Tizimdagi oxirgi o'zgarishlar" %}</span></div></div>
+    <div class="card__body dashboard-activity">
+      {% for event in recent_events %}
+        <article class="dashboard-activity__row"><time>{{ event.created_at|date:"d.m.Y H:i" }}</time><a href="{% url 'apk:submission_detail' event.submission_id %}">#{{ event.submission_id }}</a><strong>{{ event.action_label }}</strong><span>{% if event.actor %}{{ event.actor }}{% else %}{% t "Tizim" %}{% endif %}</span></article>
+      {% empty %}<p class="dashboard-empty">{% t "Hozircha harakatlar yo'q." %}</p>{% endfor %}
+    </div>
+  </section>
 </div>
 {% endblock %}

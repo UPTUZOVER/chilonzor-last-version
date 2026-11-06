@@ -1,7 +1,11 @@
 .git
 .idea
 .venv
+winenv
 __pycache__
 *.pyc
 db.sqlite3
+chilonzor_db.sqlite3
+media
+staticfiles
 

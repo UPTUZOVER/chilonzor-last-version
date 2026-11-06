@@ -7,7 +7,7 @@ rem Lokal server CSS, JavaScript va shriftlarni ham taqdim etishi uchun.
 set DEBUG=1
 
 echo ===============================================
-echo   Chilonzor - karta bloklash - lokal ishga tushirish
+echo   Raqamli Qalqon - APK tahlil - lokal ishga tushirish
 echo ===============================================
 echo.
 

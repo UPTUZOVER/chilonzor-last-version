@@ -1,4 +1,4 @@
-"""WSGI config for chilonzor project."""
+"""WSGI config for Raqamli Qalqon."""
 import os
 
 from django.core.wsgi import get_wsgi_application

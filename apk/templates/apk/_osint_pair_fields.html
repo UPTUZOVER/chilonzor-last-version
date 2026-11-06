@@ -1,0 +1,39 @@
+{% load ui_i18n %}
+
+{% for error in pair_form.non_field_errors %}
+  <div class="alert error" role="alert">{{ error }}</div>
+{% endfor %}
+<fieldset class="osint-pairs-fieldset">
+  <legend>{% t "Telegram ID va unga bog'langan qiymatlar" %}</legend>
+  <div class="osint-pair-widget" data-pair-widget>
+    <div class="osint-pairs" data-osint-pairs>
+      {% for row in pair_form.pair_rows %}
+      <div class="osint-pair" data-pair-row>
+        <div class="field">
+          <label for="{{ pair_form.pair_prefix }}-telegram-id-{{ forloop.counter0 }}">{% t "Telegram ID" %}</label>
+          <input id="{{ pair_form.pair_prefix }}-telegram-id-{{ forloop.counter0 }}" class="form-input" name="telegram_id" value="{{ row.telegram_id }}" maxlength="100" />
+        </div>
+        <div class="field">
+          <label for="{{ pair_form.pair_prefix }}-value-{{ forloop.counter0 }}">{% t "Qiymat" %}</label>
+          <input id="{{ pair_form.pair_prefix }}-value-{{ forloop.counter0 }}" class="form-input" name="value" value="{{ row.value }}" maxlength="255" />
+        </div>
+        <button type="button" class="btn osint-pair__remove" data-pair-remove aria-label="{% t 'Qatorni olib tashlash' %}">−</button>
+      </div>
+      {% endfor %}
+    </div>
+    <button type="button" class="btn osint-pair__add" data-pair-add>+ {% t "Yana qator qo'shish" %}</button>
+    <template data-osint-pair-template>
+      <div class="osint-pair" data-pair-row>
+        <div class="field">
+          <label for="{{ pair_form.pair_prefix }}-telegram-id-__index__">{% t "Telegram ID" %}</label>
+          <input id="{{ pair_form.pair_prefix }}-telegram-id-__index__" class="form-input" name="telegram_id" maxlength="100" />
+        </div>
+        <div class="field">
+          <label for="{{ pair_form.pair_prefix }}-value-__index__">{% t "Qiymat" %}</label>
+          <input id="{{ pair_form.pair_prefix }}-value-__index__" class="form-input" name="value" maxlength="255" />
+        </div>
+        <button type="button" class="btn osint-pair__remove" data-pair-remove aria-label="{% t 'Qatorni olib tashlash' %}">−</button>
+      </div>
+    </template>
+  </div>
+</fieldset>

@@ -20,7 +20,16 @@ from django.db import transaction
 
 from apk import workflow
 from apk.models import ApkFinding, ApkSubmission, Kursant
-from apk.permissions import GROUP_CHILONZOR, GROUP_MVD
+from apk.permissions import (
+    GROUP_CHILONZOR,
+    GROUP_CHILONZOR_01_ADMIN,
+    GROUP_CHILONZOR_02_ADMIN,
+    GROUP_CHILONZOR_03_ADMIN,
+    GROUP_CHILONZOR_ADMINS,
+    GROUP_CHILONZOR_HUB,
+    GROUP_CHILONZOR_OPER,
+    GROUP_MVD,
+)
 from app.models import Users
 
 User = get_user_model()
@@ -33,8 +42,16 @@ ACCOUNTS = {
     "admin1": ("Admin", "Boshqaruvchi", None, True, False),
     "mvd1": ("Aziz", "Karimov", GROUP_MVD, False, False),
     "kursant1": ("Nodira", "Rahimova", None, False, True),
-    "kursant2": ("Bobur", "Aliyev", None, False, True),
-    "chilonzor1": ("Sardor", "Yusupov", GROUP_CHILONZOR, False, False),
+    "chilonzor1": ("Sardor", "Yusupov", GROUP_CHILONZOR_OPER, False, False),
+    "chilonzor_01_admin": ("Chilonzor", "Admin 01", GROUP_CHILONZOR_01_ADMIN, False, False),
+    "chilonzor_02_admin": ("Chilonzor", "Admin 02", GROUP_CHILONZOR_02_ADMIN, False, False),
+    "chilonzor_03_admin": ("Chilonzor", "Admin 03", GROUP_CHILONZOR_03_ADMIN, False, False),
+    "chilonzor_oper1": ("Chilonzor", "Oper", GROUP_CHILONZOR_OPER, False, False),
+    "osint1": ("OSINT", "Kursant", None, False, True),
+}
+KURSANT_KINDS = {
+    "kursant1": Kursant.TYPE_APK,
+    "osint1": Kursant.TYPE_OSINT,
 }
 
 # (fayl, profil nomi, username, user_id, guruh nomi, guruh turi, chat_id)
@@ -79,7 +96,11 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS("Demo ma'lumot tayyor."))
         self.stdout.write(f"  Parol (hammasi uchun): {options['parol']}")
         for username, (first, last, group, is_staff, is_kursant) in ACCOUNTS.items():
-            role = "Admin" if is_staff else group or ("Kursant" if is_kursant else "-")
+            role = "Admin" if is_staff else group or (
+                "OSINT kursant" if KURSANT_KINDS.get(username) == Kursant.TYPE_OSINT
+                else "APK kursant" if is_kursant
+                else "-"
+            )
             self.stdout.write(f"  {username:<11} {role:<10} {first} {last}")
         self.stdout.write("  Kirish: /login/    O'chirish: python manage.py demo_data --clear")
 
@@ -96,8 +117,15 @@ class Command(BaseCommand):
             account.set_password(password)
             account.save()
 
-            if group_name:
-                group, _ = Group.objects.get_or_create(name=group_name)
+            worker_groups = Group.objects.filter(
+                name__in=(GROUP_CHILONZOR, GROUP_CHILONZOR_OPER, GROUP_CHILONZOR_HUB)
+            )
+            account.groups.remove(*worker_groups)
+            group_names = (group_name,) if group_name else ()
+            if group_name in GROUP_CHILONZOR_ADMINS:
+                group_names += (GROUP_CHILONZOR,)
+            for name in group_names:
+                group, _ = Group.objects.get_or_create(name=name)
                 account.groups.add(group)
 
             profile, _ = Users.objects.get_or_create(
@@ -108,9 +136,13 @@ class Command(BaseCommand):
 
             if is_kursant:
                 kursant, _ = Kursant.objects.get_or_create(user=profile)
+                kursant.kind = KURSANT_KINDS.get(username, Kursant.TYPE_APK)
                 kursant.is_active = True
-                kursant.save()
+                kursant.save(update_fields=["kind", "is_active"])
             profiles[username] = profile
+        demo_worker = profiles["chilonzor1"]
+        demo_worker.chilonzor_manager = profiles["chilonzor_02_admin"]
+        demo_worker.save(update_fields=["chilonzor_manager"])
         return profiles
 
     def make_submissions(self, profiles):
@@ -118,7 +150,7 @@ class Command(BaseCommand):
             old.file.delete(save=False)
             old.delete()
         mvd = profiles["mvd1"]
-        kursant1, kursant2 = profiles["kursant1"], profiles["kursant2"]
+        kursant1 = profiles["kursant1"]
         chilonzor = profiles["chilonzor1"]
 
         submissions = []
@@ -148,23 +180,29 @@ class Command(BaseCommand):
         workflow.add_findings(in_progress, ApkFinding.KIND_IP, ["203.0.113.5:8080"], kursant1)
 
         # 3) Chilonzorga yuborilgan
-        workflow.claim(sent.pk, kursant2)
-        workflow.add_findings(sent, ApkFinding.KIND_DOMAIN, ["cdn-bonus.example.com"], kursant2)
-        workflow.add_findings(sent, ApkFinding.KIND_TELEGRAM, ["@bonus_admin_uz"], kursant2)
-        workflow.send_to_chilonzor(sent.pk, kursant2)
+        workflow.claim(sent.pk, kursant1)
+        workflow.add_findings(sent, ApkFinding.KIND_DOMAIN, ["cdn-bonus.example.com"], kursant1)
+        workflow.add_findings(sent, ApkFinding.KIND_TELEGRAM, ["@bonus_admin_uz"], kursant1)
+        workflow.send_to_chilonzor(sent.pk, kursant1)
 
         # 4) Chilonzor kamchilik bilan qaytargan
         workflow.claim(returned.pk, kursant1)
         workflow.add_findings(returned, ApkFinding.KIND_IP, ["198.51.100.20"], kursant1)
         workflow.send_to_chilonzor(returned.pk, kursant1)
+        workflow.assign_review(
+            returned.pk, chilonzor, profiles["chilonzor_02_admin"]
+        )
         workflow.send_back(returned.pk, chilonzor, "Domen va Telegram ID topilmagan, qayta tekshiring.")
 
         # 5) Qabul qilingan
-        workflow.claim(accepted.pk, kursant2)
-        workflow.add_findings(accepted, ApkFinding.KIND_IP, ["192.0.2.44"], kursant2)
-        workflow.add_findings(accepted, ApkFinding.KIND_DOMAIN, ["panel.example.org"], kursant2)
-        workflow.add_findings(accepted, ApkFinding.KIND_TELEGRAM, ["5907562354"], kursant2)
-        workflow.send_to_chilonzor(accepted.pk, kursant2)
+        workflow.claim(accepted.pk, kursant1)
+        workflow.add_findings(accepted, ApkFinding.KIND_IP, ["192.0.2.44"], kursant1)
+        workflow.add_findings(accepted, ApkFinding.KIND_DOMAIN, ["panel.example.org"], kursant1)
+        workflow.add_findings(accepted, ApkFinding.KIND_TELEGRAM, ["5907562354"], kursant1)
+        workflow.send_to_chilonzor(accepted.pk, kursant1)
+        workflow.assign_review(
+            accepted.pk, chilonzor, profiles["chilonzor_02_admin"]
+        )
         workflow.accept(accepted.pk, chilonzor, "Hammasi to'g'ri.")
 
     def clear(self):

@@ -1,4 +1,4 @@
-/* Chilonzor · APK tahlil — kichik interfeys yordamchilari (kutubxonasiz). */
+/* Raqamli Qalqon · APK tahlil — kichik interfeys yordamchilari (kutubxonasiz). */
 (function () {
   "use strict";
 

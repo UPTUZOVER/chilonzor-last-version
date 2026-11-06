@@ -17,6 +17,14 @@ class Users(models.Model):
         blank=True,
         null=True,
     )
+    chilonzor_manager = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        related_name="chilonzor_employees",
+        blank=True,
+        null=True,
+        verbose_name=translate("Chilonzor mas'ul admini"),
+    )
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     messages_last_read_at = models.DateTimeField(blank=True, null=True)

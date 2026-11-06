@@ -1,0 +1,120 @@
+{% extends "app/base.html" %}
+{% load ui_i18n %}
+
+{% block title %}{% t "Chilonzor jamoasi" %}{% endblock %}
+
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1>{% t "Chilonzor jamoasi" %}</h1>
+    <p class="page-head__desc">{% t "01-admin barcha jamoalarni ko'radi. 02-admin Oper, 03-admin Hub jamoasini boshqaradi." %}</p>
+  </div>
+</header>
+
+<div class="team-average">
+  <span class="team-average__label">{% t "Jamoa o'rtachasi" %}</span>
+  <strong class="team-average__value">{{ average_accepted_30d }}</strong>
+  <span class="team-average__hint">{% t "Oxirgi 30 kunda qabul qilingan ishlar" %}</span>
+</div>
+
+<section class="org-chart" aria-label="{% t 'Chilonzor boshqaruv tuzilmasi' %}">
+  {% if root_admin %}
+    <div class="org-chart__root-area">
+      <div class="org-node org-node--root">
+        <span class="org-node__role">{% t "Chilonzor admin 01" %}</span>
+        <strong>{{ root_admin.account.username }}</strong>
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="org-chart__branches{% if teams|length == 1 %} org-chart__branches--single{% endif %}">
+    {% for team in teams %}
+      <section class="org-chart__branch">
+        <div class="org-node org-node--manager">
+          <span class="org-node__role">{{ team.name }}</span>
+          <strong>{{ team.manager.account.username }}</strong>
+          <span>{{ team.manager }}</span>
+        </div>
+
+        <div class="org-chart__employees">
+          {% for employee in team.employees %}
+            <a class="org-node org-node--employee {{ employee.row_rating_class }}"
+               href="{% url 'apk:chilonzor_employee_history' employee.pk %}">
+              <strong>{{ employee }}</strong>
+              <span class="org-node__login">{{ employee.account.username }}</span>
+              <span class="org-node__performance">
+                <span>{{ employee.accepted_30d }} {% t "qabul qilingan ish" %}</span>
+                <span class="employee-rating {{ employee.rating_class }}">{{ employee.rating_label }}</span>
+              </span>
+            </a>
+          {% empty %}
+            <div class="org-node org-node--empty">{% t "Hozircha xodim qo'shilmagan" %}</div>
+          {% endfor %}
+        </div>
+      </section>
+    {% empty %}
+      <p class="empty">{% t "Admin jamoalari topilmadi." %}</p>
+    {% endfor %}
+  </div>
+</section>
+
+{% if is_super_admin and unassigned_employees %}
+  <section class="org-unassigned">
+    <h2>{% t "Jamoaga biriktirilmagan xodimlar" %}</h2>
+    <div class="org-unassigned__list">
+      {% for employee in unassigned_employees %}
+        <a class="org-node org-node--employee" href="{% url 'apk:chilonzor_employee_history' employee.pk %}">
+          <strong>{{ employee }}</strong>
+          <span class="org-node__login">{{ employee.account.username }}</span>
+        </a>
+      {% endfor %}
+    </div>
+  </section>
+{% endif %}
+
+{% if can_add_employee %}
+  <div class="grid-2 org-forms">
+    <section class="card">
+      <div class="card__head"><h2>{% t "Yangi xodim qo'shish" %}</h2></div>
+      <form method="post">
+        {% csrf_token %}<input type="hidden" name="action" value="create_employee" />
+        <div class="card__body">
+          {% for field in create_employee_form %}
+            <div class="field">
+              <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% for error in field.errors %}<span class="field__error">{{ error }}</span>{% endfor %}
+            </div>
+          {% endfor %}
+          {% for error in create_employee_form.non_field_errors %}<p class="field__error">{{ error }}</p>{% endfor %}
+        </div>
+        <div class="card__foot"><button type="submit" class="btn btn--primary">{% t "Xodim yaratish" %}</button></div>
+      </form>
+    </section>
+
+    {% if has_unassigned_employees %}
+      <section class="card">
+        <div class="card__head"><h2>{% t "Mavjud xodimni jamoaga qo'shish" %}</h2></div>
+        <form method="post">
+          {% csrf_token %}<input type="hidden" name="action" value="attach_employee" />
+          <div class="card__body">
+            <div class="field">
+              <label for="{{ attach_employee_form.employee.id_for_label }}">{{ attach_employee_form.employee.label }}</label>
+              {{ attach_employee_form.employee }}
+              {% for error in attach_employee_form.employee.errors %}<span class="field__error">{{ error }}</span>{% endfor %}
+            </div>
+            {% if can_choose_team %}
+              <div class="field">
+                <label for="{{ attach_employee_form.manager.id_for_label }}">{{ attach_employee_form.manager.label }}</label>
+                {{ attach_employee_form.manager }}
+                {% for error in attach_employee_form.manager.errors %}<span class="field__error">{{ error }}</span>{% endfor %}
+              </div>
+            {% endif %}
+          </div>
+          <div class="card__foot"><button type="submit" class="btn">{% t "Jamoaga biriktirish" %}</button></div>
+        </form>
+      </section>
+    {% endif %}
+  </div>
+{% endif %}
+{% endblock %}

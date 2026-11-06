@@ -7,7 +7,7 @@
 <header class="page-head">
   <div>
     <h1>{% t "Kursantlar" %}</h1>
-    <p class="page-head__desc">{% t "Ro'yxatdagi faol kursantlar APK ishlarini ola oladi. Avval hisob yarating, so'ng shu yerga qo'shing." %}</p>
+    <p class="page-head__desc">{% t "Kursant turlari shu yerda boshqariladi; APK ishlarini faqat APK kursantlar oladi." %}</p>
   </div>
   <div class="page-head__actions">
     <a href="{% url 'apk:submission_list' %}" class="btn">{% t "APK ishlar" %}</a>
@@ -22,6 +22,7 @@
     <thead>
       <tr>
         <th scope="col">{% t "Kursant" %}</th>
+        <th scope="col">{% t "Turi" %}</th>
         <th scope="col">{% t "Guruh" %}</th>
         <th class="col-count" scope="col">{% t "Tartib" %}</th>
         <th scope="col">{% t "Holat" %}</th>
@@ -39,6 +40,7 @@
               {% if kursant.user.account %}<span class="cell-sub">@{{ kursant.user.account.username }}</span>{% endif %}
             </div>
           </td>
+          <td data-label="{% t 'Turi' %}">{% if kursant.kind == "apk_kursant" %}{% t "APK kursant" %}{% else %}{% t "OSINT kursant" %}{% endif %}</td>
           <td data-label="{% t 'Guruh' %}">{{ kursant.team_label }}</td>
           <td class="col-count" data-label="{% t 'Tartib' %}">{{ kursant.sort_order }}</td>
           <td data-label="{% t 'Holat' %}">{% if kursant.is_active %}{% t "Faol" %}{% else %}<span class="muted">{% t "Faolsiz" %}</span>{% endif %}</td>
@@ -54,7 +56,7 @@
           </td>
         </tr>
       {% empty %}
-        <tr><td colspan="7" class="empty" data-label="">{% t "Mos kursant topilmadi." %}</td></tr>
+        <tr><td colspan="8" class="empty" data-label="">{% t "Mos kursant topilmadi." %}</td></tr>
       {% endfor %}
     </tbody>
   </table>

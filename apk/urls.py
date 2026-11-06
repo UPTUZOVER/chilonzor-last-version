@@ -7,6 +7,7 @@ app_name = "apk"
 urlpatterns = [
     path("", views.home_view, name="home"),
     path("dashboard/", views.dashboard_view, name="dashboard"),
+    path("dashboard/report.docx", views.dashboard_report_view, name="dashboard_report"),
 
     # Asosiy jadval va APK ish sahifasi
     path("works/", views.submission_list_view, name="submission_list"),
@@ -29,8 +30,31 @@ urlpatterns = [
 
     # Chilonzor
     path("review/", views.review_queue_view, name="review_queue"),
+    path("team/", views.chilonzor_team_view, name="chilonzor_team"),
+    path(
+        "team/employees/<int:pk>/",
+        views.chilonzor_employee_history_view,
+        name="chilonzor_employee_history",
+    ),
+    path(
+        "works/<int:pk>/assign-review/",
+        views.submission_assign_review_view,
+        name="submission_assign_review",
+    ),
     path("works/<int:pk>/review/", views.submission_review_view, name="submission_review"),
-
+    path("academy/", views.osint_task_list_view, name="osint_tasks"),
+    path("academy/<int:pk>/claim/", views.osint_task_claim_view, name="osint_task_claim"),
+    path("academy/<int:pk>/submit/", views.osint_task_submit_view, name="osint_task_submit"),
+    path(
+        "academy/<int:pk>/claim-review/",
+        views.osint_task_operator_claim_view,
+        name="osint_task_operator_claim",
+    ),
+    path(
+        "academy/<int:pk>/review/",
+        views.osint_task_operator_review_view,
+        name="osint_task_operator_review",
+    ),
     # Admin
     path("kursants/", views.kursant_list_view, name="kursant_list"),
     path("kursants/create/", views.kursant_create_view, name="kursant_create"),

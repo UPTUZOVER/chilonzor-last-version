@@ -1,0 +1,182 @@
+{% extends "app/base.html" %}
+{% load ui_i18n %}
+
+{% block title %}{% t "Akademiya" %}{% endblock %}
+
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1>{% t "Akademiyaga yuborilgan topshiriqlar" %}</h1>
+    <p class="page-head__desc">{% t "Yuborilgan topshiriqlar OSINT kursantlar jadvalida ko'rinadi." %}</p>
+    {% if is_osint_kursant and osint_profile %}
+      <p class="osint-score">{% t "OSINT ballari" %}: <strong>{{ osint_profile.osint_points }}</strong></p>
+    {% endif %}
+  </div>
+</header>
+
+{% if can_submit %}
+<section class="card osint-submit-card">
+  <div class="card__head"><h2>{% t "Yangi topshiriq" %}</h2></div>
+  <div class="card__body">
+    <form method="post" class="osint-task-form">
+      {% csrf_token %}
+
+      <div class="field{% if form.title.errors %} has-error{% endif %}">
+        <label for="{{ form.title.id_for_label }}">{{ form.title.label }}</label>
+        {{ form.title }}
+        {% for error in form.title.errors %}<span class="field__error">{{ error }}</span>{% endfor %}
+      </div>
+
+      <div class="field{% if form.description.errors %} has-error{% endif %}">
+        <label for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
+        {{ form.description }}
+        {% for error in form.description.errors %}<span class="field__error">{{ error }}</span>{% endfor %}
+      </div>
+
+      {% include "apk/_osint_pair_fields.html" with pair_form=form %}
+      <button type="submit" class="btn btn--primary">{% t "Akademiyaga yuborish" %}</button>
+    </form>
+  </div>
+</section>
+{% endif %}
+
+<section class="osint-task-list" aria-label="{% t 'Akademiyaga yuborilgan topshiriqlar' %}">
+  {% for task in tasks %}
+    <article class="card osint-task-card">
+      <div class="card__head osint-task-card__head">
+        <div>
+          <h2>{{ task.title }}</h2>
+          <p class="meta">{{ task.submitted_by }} · <time datetime="{{ task.created_at|date:'c' }}">{{ task.created_at|date:"Y-m-d H:i" }}</time></p>
+        </div>
+        <span class="tag">{{ task.get_status_display }}</span>
+      </div>
+      <div class="card__body">
+        <p class="osint-task-card__description">{{ task.description|linebreaksbr }}</p>
+
+        <div class="osint-task-section">
+          <h3>{% t "Boshlang'ich ma'lumotlar" %}</h3>
+          <div class="table-wrap">
+            <table class="table osint-values-table">
+              <thead><tr><th>{% t "Telegram ID" %}</th><th>{% t "Qiymat" %}</th></tr></thead>
+              <tbody>
+                {% for entry in task.entries.all %}
+                  <tr><td data-label="{% t 'Telegram ID' %}">{{ entry.telegram_id }}</td><td data-label="{% t 'Qiymat' %}">{{ entry.value }}</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {% if task.student %}
+          <p class="osint-task-meta">{% t "OSINT kursant" %}: <strong>{{ task.student }}</strong></p>
+        {% endif %}
+        {% if task.can_student_claim %}
+          <form method="post" action="{% url 'apk:osint_task_claim' task.pk %}" class="osint-task-action">
+            {% csrf_token %}
+            <button type="submit" class="btn btn--primary">{% t "Ishni olish" %}</button>
+          </form>
+        {% endif %}
+
+        {% if task.can_student_submit %}
+          {% if task.status == "returned" and task.return_note %}
+            <div class="notice notice--warning osint-return-note">
+              <strong>{% t "Operator izohi" %}</strong>
+              <p>{{ task.return_note|linebreaksbr }}</p>
+            </div>
+          {% endif %}
+          <form method="post" action="{% url 'apk:osint_task_submit' task.pk %}" class="osint-task-form osint-result-form">
+            {% csrf_token %}
+            {% include "apk/_osint_pair_fields.html" with pair_form=task.result_form %}
+            <button type="submit" class="btn btn--primary">{% t "Natijalarni operatorga yuborish" %}</button>
+          </form>
+        {% elif task.results.all %}
+          <div class="osint-task-section">
+            <h3>{% t "OSINT natijalari" %}</h3>
+            <div class="table-wrap">
+              <table class="table osint-values-table">
+                <thead><tr><th>{% t "Telegram ID" %}</th><th>{% t "Qiymat" %}</th></tr></thead>
+                <tbody>
+                  {% for entry in task.results.all %}
+                    <tr><td data-label="{% t 'Telegram ID' %}">{{ entry.telegram_id }}</td><td data-label="{% t 'Qiymat' %}">{{ entry.value }}</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        {% endif %}
+
+        {% if task.can_operator_claim %}
+          <form method="post" action="{% url 'apk:osint_task_operator_claim' task.pk %}" class="osint-task-action">
+            {% csrf_token %}
+            <button type="submit" class="btn btn--primary">{% t "Ko'rib chiqish uchun olish" %}</button>
+          </form>
+        {% elif task.status == "operator_working" %}
+          <p class="osint-task-meta">{% t "Ishni olgan operator" %}: <strong>{{ task.operator }}</strong></p>
+          {% if task.can_operator_review %}
+            <form method="post" action="{% url 'apk:osint_task_operator_review' task.pk %}" class="osint-task-review">
+              {% csrf_token %}
+              <label class="field--check osint-useful-check">
+                <input type="checkbox" name="useful" value="on" />
+                <span>{% t "Ma'lumot foydali" %}</span>
+              </label>
+              <button type="submit" name="decision" value="accept" class="btn btn--primary">{% t "Tasdiqlash va 10 ball berish" %}</button>
+              <div class="field">
+                <label for="return-note-{{ task.pk }}">{% t "Qaytarish sababi" %}</label>
+                <textarea id="return-note-{{ task.pk }}" class="form-input" name="return_note" rows="2"></textarea>
+              </div>
+              <button type="submit" name="decision" value="return" class="btn">{% t "Kursantga qaytarish" %}</button>
+            </form>
+          {% endif %}
+        {% endif %}
+
+        {% if task.status == "returned" and not task.can_student_submit %}
+          <div class="notice notice--warning osint-return-note">
+            <strong>{% t "Operator izohi" %}</strong>
+            <p>{{ task.return_note|linebreaksbr }}</p>
+          </div>
+        {% endif %}
+        {% if task.status == "accepted" %}
+          <p class="notice notice--success osint-task-meta">
+            {% t "Tasdiqlandi" %}{% if task.points_awarded %} · {% t "OSINT kursantga 10 ball berildi." %}{% endif %}
+          </p>
+        {% endif %}
+      </div>
+    </article>
+  {% empty %}
+    <section class="card"><p class="empty">{% t "Hozircha Akademiyaga topshiriq yuborilmagan." %}</p></section>
+  {% endfor %}
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+  {% if can_submit or is_osint_kursant %}
+  <script>
+    (() => {
+      document.querySelectorAll("[data-pair-widget]").forEach((widget) => {
+        const container = widget.querySelector("[data-osint-pairs]");
+        const addButton = widget.querySelector("[data-pair-add]");
+        const template = widget.querySelector("[data-osint-pair-template]");
+        if (!container || !addButton || !template) return;
+
+        let nextIndex = container.querySelectorAll("[data-pair-row]").length;
+        addButton.addEventListener("click", () => {
+          const markup = template.innerHTML.replace(/__index__/g, String(nextIndex++));
+          container.insertAdjacentHTML("beforeend", markup.trim());
+        });
+
+        container.addEventListener("click", (event) => {
+          const removeButton = event.target.closest("[data-pair-remove]");
+          if (!removeButton) return;
+          const rows = container.querySelectorAll("[data-pair-row]");
+          const row = removeButton.closest("[data-pair-row]");
+          if (rows.length > 1) {
+            row.remove();
+            return;
+          }
+          row.querySelectorAll("input").forEach((input) => { input.value = ""; });
+        });
+      });
+    })();
+  </script>
+  {% endif %}
+{% endblock %}

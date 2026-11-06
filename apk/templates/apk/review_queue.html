@@ -7,7 +7,11 @@
 <header class="page-head">
   <div>
     <h1>{% t "Ko'rib chiqish navbati" %}</h1>
-    <p class="page-head__desc">{% t "Kursantlar yuborgan, Chilonzor qarorini kutayotgan ishlar. Eng uzoq kutgani tepada; {hours} soatdan oshgani qizil chiziq bilan belgilanadi." hours=overdue_hours %}</p>
+    {% if can_assign_review %}
+      <p class="page-head__desc">{% t "Kursantlar yuborgan ishni kerakli Chilonzor xodimiga biriktiring. Xodim faqat o'ziga berilgan ishni ko'radi." %}</p>
+    {% else %}
+      <p class="page-head__desc">{% t "Sizga biriktirilgan ishlar. Eng uzoq kutgani tepada; {hours} soatdan oshgani qizil chiziq bilan belgilanadi." hours=overdue_hours %}</p>
+    {% endif %}
   </div>
 </header>
 
@@ -21,10 +25,11 @@
           <th class="col-num" scope="col">&#8470;</th>
           <th scope="col">{% t "APK" %}</th>
           <th scope="col">{% t "Kursant" %}</th>
+          <th scope="col">{% t "Chilonzor xodimi" %}</th>
           <th class="col-count" scope="col">{% t "Topilmalar" %}</th>
           <th scope="col">{% t "Yuborilgan" %}</th>
           <th scope="col">{% t "Kutish" %}</th>
-          <th class="col-arrow" scope="col"><span class="sr-only">{% t "Ochish" %}</span></th>
+          <th class="col-action" scope="col"><span class="sr-only">{% t "Yuklab olish" %}</span></th>
         </tr>
       </thead>
       <tbody>
@@ -38,13 +43,22 @@
               </div>
             </td>
             <td data-label="{% t 'Kursant' %}">{{ item.assigned_to|default:"-" }}</td>
+            <td data-label="{% t 'Chilonzor xodimi' %}">
+              {% if item.review_assigned_to %}{{ item.review_assigned_to }}{% else %}<span class="muted">{% t "Biriktirilmagan" %}</span>{% endif %}
+            </td>
             <td class="col-count" data-label="{% t 'IP / Domen / TG' %}">{{ item.ip_count }} / {{ item.domain_count }} / {{ item.telegram_count }}</td>
             <td data-label="{% t 'Yuborilgan' %}">{{ item.sent_at|date:"d.m.Y H:i" }}</td>
             <td data-label="{% t 'Kutish' %}"><span class="wait">{{ item.wait_label }}</span></td>
-            <td class="col-arrow" data-label="" aria-hidden="true">&rarr;</td>
+            <td class="col-action" data-label="{% t 'APK' %}">
+              {% if item.is_link %}
+                <a href="{{ item.source_url }}" class="btn btn--sm" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">↗</span> {% t "Havolani ochish" %}</a>
+              {% else %}
+                <a href="{% url 'apk:submission_download' item.pk %}" class="btn btn--sm" title="{% t 'APK faylini yuklab olish' %}"><span aria-hidden="true">↓</span> {% t "Yuklab olish" %}</a>
+              {% endif %}
+            </td>
           </tr>
         {% empty %}
-          <tr><td colspan="7" class="empty" data-label="">{% t "Ko'rib chiqishni kutayotgan ish yo'q." %}</td></tr>
+          <tr><td colspan="8" class="empty" data-label="">{% t "Ko'rib chiqishni kutayotgan ish yo'q." %}</td></tr>
         {% endfor %}
       </tbody>
     </table>

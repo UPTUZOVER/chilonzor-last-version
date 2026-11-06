@@ -7,7 +7,7 @@
 <header class="page-head">
   <div>
     <h1>{% t "Guruhlar" %}</h1>
-    <p class="page-head__desc">{% t "MVD va Chilonzor guruhlari tizim rollarini belgilaydi - ularni o'chirish yoki qayta nomlash rollarni buzadi." %}</p>
+    <p class="page-head__desc">{% t "MVD, Chilonzor, Chilonzor admin 01 va Chilonzor admin 02 guruhlari tizim rollarini belgilaydi va o'zgartirilmaydi." %}</p>
   </div>
   <div class="page-head__actions">
     <a href="{% url 'app:group_create' %}" class="btn btn--primary">{% t "Yangi guruh" %}</a>
@@ -29,12 +29,16 @@
           <td data-label="{% t 'Guruh' %}"><span class="cell-title">{{ group.name|ui_group }}</span></td>
           <td class="col-count" data-label="{% t "A'zolar" %}">{{ group.member_count }}</td>
           <td class="col-action" data-label="">
-            <a href="{% url 'app:group_update' group.pk %}" class="btn btn--sm">{% t "Tahrirlash" %}</a>
-            {% t "Guruh o'chirilsinmi?" as delete_confirm %}
-            <form method="post" action="{% url 'app:group_delete' group.pk %}" class="inline-form" data-confirm="{{ delete_confirm }}">
-              {% csrf_token %}
-              <button type="submit" class="btn btn--sm btn--danger">{% t "O'chirish" %}</button>
-            </form>
+            {% if group.is_system_role %}
+              <span class="meta">{% t "Maxsus tizim guruhi" %}</span>
+            {% else %}
+              <a href="{% url 'app:group_update' group.pk %}" class="btn btn--sm">{% t "Tahrirlash" %}</a>
+              {% t "Guruh o'chirilsinmi?" as delete_confirm %}
+              <form method="post" action="{% url 'app:group_delete' group.pk %}" class="inline-form" data-confirm="{{ delete_confirm }}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn--sm btn--danger">{% t "O'chirish" %}</button>
+              </form>
+            {% endif %}
           </td>
         </tr>
       {% empty %}

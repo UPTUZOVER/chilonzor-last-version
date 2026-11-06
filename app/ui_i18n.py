@@ -921,6 +921,16 @@ def display_group_name(name):
     normalized_name = str(name or "").strip()
     if normalized_name.casefold() == "watcher":
         return translate("Kuzatuvchi")
+    if normalized_name.casefold() == "chilonzor_oper":
+        return translate("Chilonzor Oper")
+    if normalized_name.casefold() == "chilonzor_hub":
+        return translate("Chilonzor Hub")
+    if normalized_name.casefold() == "chilonzor admin 01":
+        return translate("Chilonzor admin 01")
+    if normalized_name.casefold() == "chilonzor admin 02":
+        return translate("Chilonzor admin 02")
+    if normalized_name.casefold() == "chilonzor admin 03":
+        return translate("Chilonzor admin 03")
     return normalized_name
 
 

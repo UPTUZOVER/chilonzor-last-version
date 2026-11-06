@@ -1,14 +1,16 @@
 {% extends "app/base.html" %}
-{% load ui_i18n %}
+{% load static ui_i18n %}
 
 {% block title %}{% t "Kirish" %}{% endblock %}
+{% block body_class %}auth-page{% endblock %}
 
 {% block content %}
 <section class="auth">
   <div class="auth__card">
     <div class="auth__brand">
-      {% include "app/_brand_mark.html" %}
-      <h1>Chilonzor <span class="muted">·</span> {% t "APK tahlil" %}</h1>
+      <img class="auth__emblem" src="{% static 'app/images/iiv-emblem.jpg' %}" alt="O‘zbekiston Respublikasi Ichki ishlar vazirligi emblemasi" />
+      <p class="auth__agency">O‘ZBEKISTON RESPUBLIKASI<br />ICHKI ISHLAR VAZIRLIGI</p>
+      <h1>Raqamli Qalqon <span class="muted">·</span> {% t "APK tahlil" %}</h1>
       <p class="meta">{% t "Xizmat hisobingiz bilan kiring." %}</p>
     </div>
 

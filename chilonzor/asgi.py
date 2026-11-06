@@ -1,4 +1,4 @@
-"""ASGI config for chilonzor project."""
+"""ASGI config for Raqamli Qalqon."""
 import os
 
 from django.core.asgi import get_asgi_application

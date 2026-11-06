@@ -16,13 +16,27 @@ STATE_ACCEPTED = "st-accepted"
 
 
 class Kursant(models.Model):
-    """Kursant - asosiy jadvalda ustun sifatida ko'rinadi va APK ishini oladi."""
+    """APK yoki OSINT yo'nalishidagi kursant hisobi."""
+
+    TYPE_APK = "apk_kursant"
+    TYPE_OSINT = "osint_kursant"
+    TYPE_CHOICES = (
+        (TYPE_APK, _("APK kursant")),
+        (TYPE_OSINT, _("OSINT kursant")),
+    )
 
     user = models.OneToOneField(
         Users,
         on_delete=models.CASCADE,
         related_name="kursant_profile",
         verbose_name=_("Kursant"),
+    )
+    kind = models.CharField(
+        max_length=24,
+        choices=TYPE_CHOICES,
+        default=TYPE_APK,
+        db_index=True,
+        verbose_name=_("Turi"),
     )
     team = models.CharField(
         max_length=100,
@@ -33,6 +47,7 @@ class Kursant(models.Model):
     )
     sort_order = models.PositiveIntegerField(default=0, verbose_name=_("Tartib"))
     is_active = models.BooleanField(default=True, verbose_name=_("Faol"))
+    osint_points = models.PositiveIntegerField(default=0, verbose_name=_("OSINT ballari"))
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -48,6 +63,114 @@ class Kursant(models.Model):
         from app.ui_i18n import translate
 
         return self.team or translate("Guruhsiz")
+
+
+class OsintTask(models.Model):
+    """Telegram ID va unga bog'langan qiymatlar bilan Akademiyaga yuborilgan topshiriq."""
+
+    STATUS_NEW = "new"
+    STATUS_STUDENT_WORKING = "student_working"
+    STATUS_SENT = "sent"
+    STATUS_OPERATOR_WORKING = "operator_working"
+    STATUS_RETURNED = "returned"
+    STATUS_ACCEPTED = "accepted"
+    STATUS_CHOICES = (
+        (STATUS_NEW, _("Yangi")),
+        (STATUS_STUDENT_WORKING, _("OSINT kursant ish boshladi")),
+        (STATUS_SENT, _("Operator ko'rishini kutmoqda")),
+        (STATUS_OPERATOR_WORKING, _("Operator ishni ko'rib chiqmoqda")),
+        (STATUS_RETURNED, _("Kursantga qaytarildi")),
+        (STATUS_ACCEPTED, _("Tasdiqlandi")),
+    )
+
+    title = models.CharField(max_length=200, verbose_name=_("Sarlavha"))
+    description = models.TextField(verbose_name=_("Tavsif"))
+    status = models.CharField(
+        max_length=24,
+        choices=STATUS_CHOICES,
+        default=STATUS_NEW,
+        db_index=True,
+        verbose_name=_("Holat"),
+    )
+    submitted_by = models.ForeignKey(
+        Users,
+        on_delete=models.PROTECT,
+        related_name="osint_tasks_sent",
+        verbose_name=_("Yuborgan"),
+    )
+    student = models.ForeignKey(
+        Users,
+        on_delete=models.SET_NULL,
+        related_name="osint_tasks_claimed",
+        null=True,
+        blank=True,
+        verbose_name=_("OSINT kursant"),
+    )
+    student_claimed_at = models.DateTimeField(null=True, blank=True)
+    student_submitted_at = models.DateTimeField(null=True, blank=True)
+    operator = models.ForeignKey(
+        Users,
+        on_delete=models.SET_NULL,
+        related_name="osint_tasks_operating",
+        null=True,
+        blank=True,
+        verbose_name=_("Ishni olgan operator"),
+    )
+    operator_claimed_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.ForeignKey(
+        Users,
+        on_delete=models.SET_NULL,
+        related_name="osint_tasks_reviewed",
+        null=True,
+        blank=True,
+        verbose_name=_("Ko'rib chiqqan operator"),
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    return_note = models.TextField(blank=True, default="", verbose_name=_("Qaytarish sababi"))
+    points_awarded = models.BooleanField(default=False, verbose_name=_("Ball berildi"))
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        verbose_name = _("Akademiya topshirig'i")
+        verbose_name_plural = _("Akademiya topshiriqlari")
+
+    def __str__(self):
+        return self.title
+
+
+class OsintTaskValue(models.Model):
+    task = models.ForeignKey(
+        OsintTask,
+        on_delete=models.CASCADE,
+        related_name="entries",
+        verbose_name=_("Topshiriq"),
+    )
+    order = models.PositiveIntegerField(default=0, verbose_name=_("Tartib"))
+    telegram_id = models.CharField(max_length=100, verbose_name=_("Telegram ID"))
+    value = models.CharField(max_length=255, verbose_name=_("Qiymat"))
+
+    class Meta:
+        ordering = ["order", "id"]
+        verbose_name = _("Telegram ID va qiymat")
+        verbose_name_plural = _("Telegram ID va qiymatlar")
+
+
+class OsintTaskResult(models.Model):
+    task = models.ForeignKey(
+        OsintTask,
+        on_delete=models.CASCADE,
+        related_name="results",
+        verbose_name=_("Topshiriq"),
+    )
+    order = models.PositiveIntegerField(default=0, verbose_name=_("Tartib"))
+    telegram_id = models.CharField(max_length=100, verbose_name=_("Telegram ID"))
+    value = models.CharField(max_length=255, verbose_name=_("Qiymat"))
+
+    class Meta:
+        ordering = ["order", "id"]
+        verbose_name = _("OSINT natijasi")
+        verbose_name_plural = _("OSINT natijalari")
 
 
 class ApiClient(models.Model):
@@ -114,6 +237,13 @@ class ApiClient(models.Model):
 class ApkSubmission(models.Model):
     """Botdan kelgan bitta APK - jadvalning bir qatori (bir "ish")."""
 
+    SOURCE_APK = "apk"
+    SOURCE_LINK = "link"
+    SOURCE_CHOICES = (
+        (SOURCE_APK, _("APK fayl")),
+        (SOURCE_LINK, _("Havola")),
+    )
+
     STATUS_NEW = "new"
     STATUS_IN_PROGRESS = "in_progress"
     STATUS_SENT = "sent"
@@ -163,6 +293,12 @@ class ApkSubmission(models.Model):
     sender_user_id = models.BigIntegerField(
         null=True, blank=True, db_index=True, verbose_name=_("Yuborgan user ID")
     )
+    source_hash = models.CharField(
+        max_length=255, blank=True, default="", verbose_name=_("MVD hash qiymati")
+    )
+    source_created_at = models.DateTimeField(
+        null=True, blank=True, verbose_name=_("MVDdagi yaratilgan vaqt")
+    )
     chat_title = models.CharField(
         max_length=255, blank=True, default="", verbose_name=_("Guruh nomi")
     )
@@ -173,10 +309,27 @@ class ApkSubmission(models.Model):
         null=True, blank=True, db_index=True, verbose_name=_("Guruh ID")
     )
 
-    file = models.FileField(upload_to="apk/%Y/%m/", verbose_name=_("APK fayl"))
+    source_type = models.CharField(
+        max_length=8,
+        choices=SOURCE_CHOICES,
+        default=SOURCE_APK,
+        db_index=True,
+        verbose_name=_("Manba turi"),
+    )
+    source_url = models.URLField(
+        max_length=2048,
+        blank=True,
+        default="",
+        verbose_name=_("APK havolasi"),
+    )
+    file = models.FileField(
+        upload_to="apk/%Y/%m/", blank=True, verbose_name=_("APK fayl")
+    )
     file_name = models.CharField(max_length=255, verbose_name=_("Fayl nomi"))
     file_size = models.BigIntegerField(default=0, verbose_name=_("Fayl hajmi (bayt)"))
-    sha256 = models.CharField(max_length=64, db_index=True, verbose_name="SHA-256")
+    sha256 = models.CharField(
+        max_length=64, blank=True, default="", db_index=True, verbose_name="SHA-256"
+    )
     duplicate_of = models.ForeignKey(
         "self",
         on_delete=models.SET_NULL,
@@ -207,6 +360,15 @@ class ApkSubmission(models.Model):
         related_name="apk_assignments",
         verbose_name=_("Kursant"),
     )
+    review_assigned_to = models.ForeignKey(
+        Users,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="chilonzor_review_assignments",
+        verbose_name=_("Chilonzor xodimi"),
+    )
+    review_assigned_at = models.DateTimeField(null=True, blank=True)
     claimed_at = models.DateTimeField(null=True, blank=True)
     analysis_note = models.TextField(blank=True, default="", verbose_name=_("Tahlil izohi"))
     sent_at = models.DateTimeField(null=True, blank=True)
@@ -235,6 +397,10 @@ class ApkSubmission(models.Model):
 
     def __str__(self):
         return f"#{self.pk} {self.file_name}"
+
+    @property
+    def is_link(self):
+        return self.source_type == self.SOURCE_LINK
 
     @property
     def status_label(self):
@@ -318,6 +484,10 @@ class ApkEvent(models.Model):
     ACTION_SENT = "sent"
     ACTION_RETURNED = "returned"
     ACTION_ACCEPTED = "accepted"
+    ACTION_REVIEW_ASSIGNED = "review_assigned"
+    ACTION_FINDINGS_ADDED = "findings_added"
+    ACTION_FINDING_DELETED = "finding_deleted"
+    ACTION_ANALYSIS_NOTE = "analysis_note"
 
     ACTION_CHOICES = (
         (ACTION_RECEIVED, _("Botdan keldi")),
@@ -326,6 +496,10 @@ class ApkEvent(models.Model):
         (ACTION_SENT, _("Chilonzorga yuborildi")),
         (ACTION_RETURNED, _("Chilonzor qaytardi")),
         (ACTION_ACCEPTED, _("Chilonzor qabul qildi")),
+        (ACTION_REVIEW_ASSIGNED, _("Chilonzor xodimiga biriktirildi")),
+        (ACTION_FINDINGS_ADDED, _("Topilmalar qo'shildi")),
+        (ACTION_FINDING_DELETED, _("Topilma o'chirildi")),
+        (ACTION_ANALYSIS_NOTE, _("Tahlil izohi yangilandi")),
     )
 
     submission = models.ForeignKey(
@@ -333,6 +507,14 @@ class ApkEvent(models.Model):
     )
     actor = models.ForeignKey(
         Users, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    review_assignee = models.ForeignKey(
+        Users,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="chilonzor_assignment_events",
+        verbose_name=_("Biriktirilgan Chilonzor xodimi"),
     )
     action = models.CharField(max_length=16, choices=ACTION_CHOICES)
     note = models.TextField(blank=True, default="")
