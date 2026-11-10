@@ -1,0 +1,1 @@
+<span class="org-avatar" aria-hidden="true">{% if profile.first_name %}{{ profile.first_name|slice:":1"|upper }}{{ profile.last_name|slice:":1"|upper }}{% else %}{{ profile.account.username|slice:":1"|upper }}{% endif %}</span>

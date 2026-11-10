@@ -49,24 +49,48 @@ def dashboard_role(user):
     return None
 
 
+DONUT_RADIUS = 52
+DONUT_GAP = 2
+
+
 def _chart_rows(rows):
-    """Attach percentages and SVG donut stroke geometry to chart rows."""
+    """Attach percentages and SVG donut stroke geometry to chart rows.
+
+    arc_dash / arc_offset - statistika sahifasidagi doira uchun (r=52): bo'laklar
+    orasida 2 birlik bo'shliq qoladi, yagona bo'lak esa to'liq aylana bo'ladi."""
     total = sum(row["count"] for row in rows)
     circumference = 2 * pi * 40
+    donut_circumference = 2 * pi * DONUT_RADIUS
+    filled = sum(1 for row in rows if row["count"])
     offset = 0.0
+    arc_offset = 0.0
     result = []
     for row in rows:
         share = row["count"] * 100 / total if total else 0
         length = circumference * share / 100
+        arc = donut_circumference * share / 100
+        visible = arc if filled <= 1 else max(arc - DONUT_GAP, 0.5)
         item = {
             **row,
             "share": round(share),
             "dasharray": f"{length:.2f} {max(circumference - length, 0):.2f}",
             "dashoffset": f"-{offset:.2f}",
+            "arc_dash": f"{visible:.2f} {max(donut_circumference - visible, 0):.2f}",
+            "arc_offset": f"{-arc_offset:.2f}",
         }
         result.append(item)
         offset += length
+        arc_offset += arc
     return result, total
+
+
+def _bar_rows(rows):
+    """Gorizontal ustunlar uchun: kattasidan kichigiga, eng kattasiga nisbatan foiz."""
+    maximum = max([row["count"] for row in rows] + [1])
+    return [
+        {**row, "width": round(row["count"] * 100 / maximum)}
+        for row in sorted(rows, key=lambda row: -row["count"])
+    ]
 
 
 def _status_rows(counts):
@@ -220,6 +244,7 @@ def build_dashboard_context(user, period_days=30):
         chart_source = [
             {
                 "label": str(label),
+                "status": code,
                 "color": CHART_COLORS[code],
                 "count": decision_counts.get(code, 0),
             }
@@ -235,16 +260,34 @@ def build_dashboard_context(user, period_days=30):
             )
         )
         durations = [max(0, (reviewed - sent).total_seconds() / 3600) for sent, reviewed in decided]
-        average_hours = round(sum(durations) / len(durations), 1) if durations else None
+        average_hours = sum(durations) / len(durations) if durations else None
+        if average_hours is None:
+            average_label = "—"
+        elif average_hours < 1:
+            average_label = translate("{count} daqiqa", count=max(round(average_hours * 60), 1))
+        else:
+            average_label = translate("{count} soat", count=round(average_hours, 1))
         acceptance_rate = round(
             decision_counts.get(ApkSubmission.STATUS_ACCEPTED, 0) * 100 / decision_total
         ) if decision_total else 0
+        decided_today = submissions.filter(
+            status__in=(ApkSubmission.STATUS_ACCEPTED, ApkSubmission.STATUS_RETURNED),
+            reviewed_at__date=today,
+        ).count()
+        recent_decisions = list(
+            submissions.filter(
+                status__in=(ApkSubmission.STATUS_ACCEPTED, ApkSubmission.STATUS_RETURNED),
+                reviewed_at__isnull=False,
+            ).select_related("reviewed_by").order_by("-reviewed_at")[:6]
+        )
         kpis = [
             {"label": translate("Ko'rib chiqish navbatida"), "value": queue.count(), "hint": translate("qaror kutilmoqda"), "tone": "amber"},
             {"label": translate("Kechikkan ishlar"), "value": overdue_count, "hint": translate("48 soatdan ko'p kutilgan"), "tone": "red"},
             {"label": translate("Davrda qarorlar"), "value": decision_total, "hint": translate("qabul qilingan yoki qaytarilgan"), "tone": "blue"},
             {"label": translate("Qabul qilish darajasi"), "value": f"{acceptance_rate}%", "hint": translate("tanlangan davr bo'yicha"), "tone": "green"},
-            {"label": translate("O'rtacha ko'rib chiqish"), "value": f"{average_hours} soat" if average_hours is not None else "—", "hint": translate("yuborilgandan qarorgacha"), "tone": "blue"},
+            {"label": translate("O'rtacha ko'rib chiqish"), "value": average_label, "hint": translate("yuborilgandan qarorgacha"), "tone": "blue"},
+            {"label": translate("Bugungi qarorlar"), "value": decided_today, "hint": translate("bugun qabul yoki qaytarilgan"), "tone": "green"},
+            {"label": translate("Qaytarilganlar"), "value": decision_counts.get(ApkSubmission.STATUS_RETURNED, 0), "hint": translate("tanlangan davr bo'yicha"), "tone": "red"},
         ]
         chart_rows, chart_total = _chart_rows(chart_source)
         extra_rows = list(
@@ -334,7 +377,13 @@ def build_dashboard_context(user, period_days=30):
             returned_count=Count("user__apk_assignments", filter=Q(user__apk_assignments__status=ApkSubmission.STATUS_RETURNED), distinct=True),
         ).order_by("-accepted_count", "user__first_name")
         performance_rows = [
-            {"name": str(item.user), "active": item.active_count, "accepted": item.accepted_count, "returned": item.returned_count}
+            {
+                "name": str(item.user),
+                "active": item.active_count,
+                "accepted": item.accepted_count,
+                "returned": item.returned_count,
+                "total": item.active_count + item.accepted_count + item.returned_count,
+            }
             for item in kursants[:12]
         ]
         waiting_rows = []
@@ -345,6 +394,7 @@ def build_dashboard_context(user, period_days=30):
 
     daily, trend_title = _trend_rows(trend_submissions, role, period_start, period_end, period_days)
     finding_chart, finding_chart_total = _chart_rows(findings)
+    trend_peak = max(daily, key=lambda item: (item["count"], item["day"])) if daily else None
     return {
         "role": role,
         "role_title": {
@@ -370,6 +420,20 @@ def build_dashboard_context(user, period_days=30):
         "daily": daily,
         "trend_title": trend_title,
         "trend_max": max((item["count"] for item in daily), default=0),
+        # Kunlik ustunli grafik uchun (dashboard.js chizadi, json_script orqali).
+        "trend_points": [
+            {
+                "date": item["day"].isoformat(),
+                "label": item["day"].strftime("%d.%m"),
+                "full": item["day"].strftime("%d.%m.%Y"),
+                "count": item["count"],
+            }
+            for item in daily
+        ],
+        "trend_total": sum(item["count"] for item in daily),
+        "trend_peak": trend_peak if trend_peak and trend_peak["count"] else None,
+        "finding_bars": _bar_rows(findings),
+        "source_bars": _bar_rows(source_rows),
         "finding_rows": findings,
         "finding_chart": finding_chart,
         "finding_chart_total": finding_chart_total,
@@ -381,4 +445,5 @@ def build_dashboard_context(user, period_days=30):
         "extra_rows": extra_rows,
         "extra_title": extra_title,
         "recent_events": recent_events,
+        "recent_decisions": recent_decisions if role == "chilonzor" else [],
     }

@@ -212,6 +212,42 @@ def status_filter_options(queryset=None):
     ]
 
 
+def status_tabs(request, options, selected_status, total):
+    """Ro'yxat ustidagi holat tablari: har holat soni va shu holatga filtr havolasi.
+    Qidiruv va boshqa filtrlar saqlanadi, sahifa raqami esa tushib qoladi."""
+    params = request.GET.copy()
+    params.pop("page", None)
+    params.pop("holat", None)
+
+    def url_for(key):
+        query = params.copy()
+        if key:
+            query["holat"] = key
+        encoded = query.urlencode()
+        return f"?{encoded}" if encoded else request.path
+
+    tabs = [
+        {
+            "key": "",
+            "label": translate("Hammasi"),
+            "count": total,
+            "color": "",
+            "url": url_for(""),
+            "active": not selected_status,
+        }
+    ]
+    for option in options:
+        tabs.append(
+            {
+                **option,
+                "color": ApkSubmission.STATUS_COLORS.get(option["key"], ""),
+                "url": url_for(option["key"]),
+                "active": option["key"] == selected_status,
+            }
+        )
+    return tabs
+
+
 # --------------------------------------------------------------------------
 # Kirish nuqtasi
 # --------------------------------------------------------------------------
@@ -298,6 +334,7 @@ def submission_list_view(request):
         )
     query = request.GET.copy()
     query.pop("page", None)
+    total_count = base.count()
 
     return render(
         request,
@@ -315,7 +352,8 @@ def submission_list_view(request):
             "filters": filters,
             "is_filtered": bool(search or selected_status or selected_scope),
             "result_count": paginator.count,
-            "total_count": base.count(),
+            "total_count": total_count,
+            "status_tabs": status_tabs(request, filters[0]["options"], selected_status, total_count),
             "current_profile": profile,
             "can_work": user_can_work(request.user),
             "can_manage": request.user.is_staff,
@@ -792,6 +830,13 @@ def review_queue_view(request):
     elif user_is_chilonzor_team_admin(request.user) and not user_is_chilonzor_super_admin(request.user):
         decided_queryset = decided_queryset.filter(reviewed_by__chilonzor_manager=profile)
     decided = list(decided_queryset[:50])
+    # Sahifa tepasidagi ko'rsatkichlar (qidiruv hisobga olinadi).
+    overdue_cutoff = now - timedelta(hours=REVIEW_OVERDUE_HOURS)
+    overdue_count = pending_queryset.filter(
+        Q(sent_at__lte=overdue_cutoff) | Q(sent_at__isnull=True, created_at__lte=overdue_cutoff)
+    ).count()
+    unassigned_count = pending_queryset.filter(review_assigned_to__isnull=True).count()
+    decided_accepted = sum(1 for item in decided if item.status == ApkSubmission.STATUS_ACCEPTED)
     return render(
         request,
         "apk/review_queue.html",
@@ -800,7 +845,11 @@ def review_queue_view(request):
             "page": page,
             "page_query": query.urlencode(),
             "overdue_hours": REVIEW_OVERDUE_HOURS,
+            "overdue_count": overdue_count,
+            "unassigned_count": unassigned_count,
             "decided": decided,
+            "decided_accepted": decided_accepted,
+            "decided_returned": len(decided) - decided_accepted,
             "search": search,
             "search_placeholder": translate("Fayl, yuboruvchi, IP, domen yoki Telegram ID..."),
             "is_filtered": bool(search),
@@ -1284,6 +1333,8 @@ def dashboard_report_view(request):
     from .reports import build_word_report
 
     context = _dashboard_context(request)
+    profile = getattr(request.user, "profile", None)
+    context["prepared_by"] = (str(profile) if profile else "") or request.user.get_full_name() or request.user.username
     report = build_word_report(context)
     filename = f"raqamli-qalqon-{context['role']}-hisobot-{timezone.localdate():%Y%m%d}.docx"
     response = HttpResponse(

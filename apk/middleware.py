@@ -21,6 +21,13 @@ ALLOWED_APP_URL_NAMES = {
     "set_language",
     "message_inbox",
     "message_thread",
+    "message_system",
+    "message_news",
+    "message_send",
+    "message_poll",
+    "message_react",
+    "message_delete",
+    "message_attachment",
     "home",
 }
 

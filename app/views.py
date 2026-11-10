@@ -9,19 +9,18 @@ from django.core.cache import cache
 from django.db.models import Count, Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse
+from django.urls import Resolver404, resolve, reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from .forms import (
-    AdminMessageForm,
     GroupManageForm,
     LockoutAuthenticationForm,
     UserCreateForm,
     UserFilterForm,
     UserUpdateForm,
 )
-from .models import AdminMessage, Users
+from .models import Users
 from .ui_i18n import (
     UI_LANGUAGE_SESSION_KEY,
     display_group_name,
@@ -69,6 +68,28 @@ class SecureLoginView(LoginView):
     authentication_form = LockoutAuthenticationForm
     template_name = "registration/login.html"
     redirect_authenticated_user = True
+
+    # Fayl yuklab beradigan manzillar: login'dan keyin fayl o'rniga u turgan
+    # sahifaga qaytamiz, aks holda brauzer faylni yuklab, login sahifasida qoladi.
+    FILE_URL_PAGES = {
+        "dashboard_report": "apk:dashboard",
+        "submission_download": "apk:submission_detail",
+    }
+
+    def get_redirect_url(self):
+        url = super().get_redirect_url()
+        if not url:
+            return url
+        path, _, query = url.partition("?")
+        try:
+            match = resolve(path)
+        except Resolver404:
+            return url
+        page = self.FILE_URL_PAGES.get(match.url_name)
+        if not page:
+            return url
+        target = reverse(page, kwargs=match.kwargs)
+        return f"{target}?{query}" if query else target
 
     def form_invalid(self, form):
         error_codes = {
@@ -195,109 +216,6 @@ def get_visible_group_queryset_for_user(user):
 
 def get_visible_group_queryset_for_request(request):
     return get_visible_group_queryset_for_user(request.user)
-
-
-def get_messageable_user_queryset():
-    return (
-        Users.objects.select_related("account")
-        .prefetch_related("account__groups")
-        .filter(account__isnull=False)
-        .order_by("first_name", "last_name", "pk")
-    )
-
-
-def get_message_thread_profile_for_request(request, pk=None):
-    current_profile = get_or_create_profile(request.user)
-    if pk is None:
-        return current_profile
-
-    profile = get_object_or_404(get_messageable_user_queryset(), pk=pk)
-    if request.user.is_staff or profile.account_id == request.user.id:
-        return profile
-    raise Http404("Bu xabar oynasi siz uchun yopiq.")
-
-
-def get_message_queryset_for_profile(profile):
-    return (
-        AdminMessage.objects.select_related(
-            "sender",
-            "sender__account",
-            "recipient",
-            "recipient__account",
-        )
-        .prefetch_related("sender__account__groups", "recipient__account__groups")
-        .filter(Q(recipient=profile) | Q(recipient__isnull=True))
-        .order_by("created_at", "id")
-    )
-
-
-@login_required
-@post_rate_limit(limit=5, timeout=60)
-def message_inbox_view(request, pk=None):
-    current_profile = get_or_create_profile(request.user)
-    request._message_profile = current_profile
-    thread_profile = get_message_thread_profile_for_request(request, pk=pk)
-    can_send_messages = request.user.is_staff
-    recipient_queryset = get_messageable_user_queryset()
-    initial_recipient = None
-    if can_send_messages and thread_profile.pk != current_profile.pk:
-        initial_recipient = thread_profile
-
-    if can_send_messages:
-        form = AdminMessageForm(
-            request.POST or None,
-            recipients=recipient_queryset,
-            initial_recipient=initial_recipient,
-        )
-        if request.method == "POST" and form.is_valid():
-            created_message = form.save(sender=current_profile)
-            if created_message.recipient_id:
-                messages.success(
-                    request,
-                    translate("Xabar {recipient} ga yuborildi.", recipient=created_message.recipient),
-                )
-                return redirect("app:message_thread", pk=created_message.recipient_id)
-            messages.success(request, translate("Hammaga e'lon yuborildi."))
-            return redirect("app:message_thread", pk=thread_profile.pk)
-    else:
-        form = None
-        if request.method == "POST":
-            messages.error(request, translate("Xabar yuborish faqat admin uchun."))
-            return redirect("app:message_inbox")
-
-    if not can_send_messages:
-        current_profile.mark_messages_read()
-
-    thread_messages = list(get_message_queryset_for_profile(thread_profile))
-    # Shaxsan shu foydalanuvchiga yo'llangan xabarlar (masalan, firibgarlik
-    # bo'limidagi tasdiqlash bildirishnomalari) hammaga yuborilgan e'lonlar
-    # bilan bir qatorda yo'qolib qolmasligi uchun ikkiga ajratib chiqariladi.
-    personal_messages = [item for item in thread_messages if not item.is_broadcast]
-    broadcast_messages = [item for item in thread_messages if item.is_broadcast]
-    thread_users = list(recipient_queryset) if can_send_messages else []
-
-    # MVD xodimlari faqat o'zlariga tegishli (shaxsiy) xabarlarni ko'radi -
-    # hammaga yuborilgan umumiy e'lonlar ularga ko'rsatilmaydi.
-    show_broadcast_messages = True
-    if not can_send_messages and account_has_group(request.user, "MVD"):
-        show_broadcast_messages = False
-        broadcast_messages = []
-
-    return render(
-        request,
-        "app/messages.html",
-        {
-            "thread_profile": thread_profile,
-            "thread_messages": thread_messages,
-            "personal_messages": personal_messages,
-            "broadcast_messages": broadcast_messages,
-            "show_broadcast_messages": show_broadcast_messages,
-            "current_profile": current_profile,
-            "thread_users": thread_users,
-            "message_form": form,
-            "can_send_messages": can_send_messages,
-        },
-    )
 
 
 @login_required

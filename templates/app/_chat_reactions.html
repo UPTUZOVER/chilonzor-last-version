@@ -1,0 +1,1 @@
+{% for group in item.reaction_groups %}<button type="button" class="reaction{% if group.mine %} is-mine{% endif %}"{% if thread_kind != "system" %} data-react="{{ group.emoji }}"{% endif %} title="{{ group.names|join:', ' }}"><span>{{ group.emoji }}</span><b>{{ group.count }}</b></button>{% endfor %}

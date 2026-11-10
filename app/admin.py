@@ -36,7 +36,8 @@ class UsersAdmin(admin.ModelAdmin):
 
 @admin.register(AdminMessage)
 class AdminMessageAdmin(admin.ModelAdmin):
-    list_display = ("sender", "recipient", "created_at")
+    list_display = ("sender", "recipient", "is_system", "attachment_kind", "created_at")
+    list_filter = ("is_system", "attachment_kind")
     search_fields = ("body", "sender__first_name", "recipient__first_name")
 
 

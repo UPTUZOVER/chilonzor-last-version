@@ -1,0 +1,1 @@
+<span class="cavatar" data-c="{{ profile.pk|stringformat:'d'|slice:'-1:' }}" aria-hidden="true">{% if profile.first_name %}{{ profile.first_name|slice:":1"|upper }}{{ profile.last_name|slice:":1"|upper }}{% elif profile.account %}{{ profile.account.username|slice:":1"|upper }}{% else %}?{% endif %}</span>

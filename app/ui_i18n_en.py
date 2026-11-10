@@ -553,4 +553,10 @@ EN_TRANSLATIONS = {
     "Tizim rolini bildiradigan guruhni o'zgartirib yoki o'chirib bo'lmaydi.": "System role groups cannot be renamed or deleted.",
     "Havolalar": "Links",
     "qabul qilingan havolalar": "received links",
+    "Himoyalangan ulanish": "Secure connection",
+    "Xodimlar": "Employees",
+    "Jamoalar": "Teams",
+    "Olinmagan": "Not taken",
+    "{hours} soatdan oshgan": "Over {hours} hours",
+    "Word hisobot": "Word report",
 }

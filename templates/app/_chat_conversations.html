@@ -1,0 +1,18 @@
+{% load ui_i18n %}{% now "Ymd" as today %}
+{% for conv in conversations %}
+  <li data-search="{{ conv.title|lower }}">
+    <a href="{{ conv.url }}" class="conv{% if conv.key == active_key %} is-active{% endif %}{% if conv.unread %} has-unread{% endif %}">
+      {% if conv.kind == "direct" %}{% include "app/_chat_avatar.html" with profile=conv.peer %}{% else %}{% include "app/_chat_icon.html" with kind=conv.kind %}{% endif %}
+      <span class="conv__body">
+        <span class="conv__top">
+          <strong class="conv__title">{{ conv.title }}</strong>
+          {% if conv.last %}<time class="conv__time" datetime="{{ conv.last.created_at|date:'c' }}">{% if conv.last.created_at|date:"Ymd" == today %}{{ conv.last.created_at|date:"H:i" }}{% else %}{{ conv.last.created_at|date:"d.m" }}{% endif %}</time>{% endif %}
+        </span>
+        <span class="conv__bottom">
+          <span class="conv__preview">{{ conv.preview|default:"—" }}</span>
+          {% if conv.unread %}<span class="conv__badge">{{ conv.unread }}</span>{% endif %}
+        </span>
+      </span>
+    </a>
+  </li>
+{% endfor %}

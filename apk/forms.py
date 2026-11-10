@@ -102,28 +102,39 @@ class ReviewAssignmentForm(BaseStyledPlainForm):
         )
 
 
+def use_floating_labels(form):
+    """Suzuvchi yorliq CSS'i (:placeholder-shown) ishlashi uchun bo'sh placeholder."""
+    for field in form.fields.values():
+        field.widget.attrs.setdefault("placeholder", " ")
+
+
 class ChilonzorEmployeeForm(BaseStyledPlainForm):
     manager = forms.ModelChoiceField(
         queryset=Users.objects.none(),
         label=_("Jamoa"),
         empty_label=_("Jamoani tanlang"),
     )
-    username = forms.CharField(label=_("Login"), max_length=150)
+    username = forms.CharField(
+        label=_("Login"),
+        max_length=150,
+        widget=forms.TextInput(attrs={"autocomplete": "off"}),
+    )
     first_name = forms.CharField(label=_("Ism"), max_length=100)
     last_name = forms.CharField(label=_("Familiya"), max_length=100)
     password1 = forms.CharField(
         label=_("Parol"),
         strip=False,
-        widget=forms.PasswordInput,
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
     )
     password2 = forms.CharField(
         label=_("Parolni tasdiqlang"),
         strip=False,
-        widget=forms.PasswordInput,
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
     )
 
     def __init__(self, *args, team_managers=None, **kwargs):
         super().__init__(*args, **kwargs)
+        use_floating_labels(self)
         if team_managers is None:
             self.fields.pop("manager")
             return
@@ -189,6 +200,7 @@ class AttachChilonzorEmployeeForm(BaseStyledPlainForm):
 
     def __init__(self, *args, employees=None, team_managers=None, **kwargs):
         super().__init__(*args, **kwargs)
+        use_floating_labels(self)
         self.fields["employee"].queryset = employees or Users.objects.none()
         self.fields["employee"].label_from_instance = lambda profile: (
             f"{profile} ({profile.account.username})"

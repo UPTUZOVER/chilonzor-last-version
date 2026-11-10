@@ -24,7 +24,7 @@ def notify_group(sender_profile, group_name, body):
         return 0
     AdminMessage.objects.bulk_create(
         [
-            AdminMessage(sender=sender_profile, recipient=recipient, body=body)
+            AdminMessage(sender=sender_profile, recipient=recipient, body=body, is_system=True)
             for recipient in recipients
         ]
     )
@@ -34,4 +34,4 @@ def notify_group(sender_profile, group_name, body):
 def notify_user(sender_profile, recipient_profile, body):
     if not recipient_profile or (sender_profile and recipient_profile.pk == sender_profile.pk):
         return
-    AdminMessage.objects.create(sender=sender_profile, recipient=recipient_profile, body=body)
+    AdminMessage.objects.create(sender=sender_profile, recipient=recipient_profile, body=body, is_system=True)

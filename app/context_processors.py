@@ -17,7 +17,9 @@ def ui_i18n(request):
                     },
                 )
             request._message_profile = profile
-        message_unread_count = profile.unread_message_count()
+        from .chat import _news_visible
+
+        message_unread_count = profile.unread_message_count(include_news=_news_visible(request.user))
 
     return {
         "ui_language": getattr(request, "ui_language", get_language_from_request(request)),

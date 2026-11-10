@@ -2,6 +2,7 @@
 {% load ui_i18n %}
 
 {% block title %}{% t "Ko'rib chiqish" %}{% endblock %}
+{% block body_class %}review-page glass-ui glass-list{% endblock %}
 
 {% block content %}
 <header class="page-head">
@@ -15,6 +16,50 @@
   </div>
 </header>
 
+<div class="review-stats">
+  <div class="mini-stat">
+    <span class="mini-stat__icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13h5l1.5 3h5L16 13h5"/><path d="M5.5 5h13L21 13v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-5l2.5-8Z"/></svg>
+    </span>
+    <span class="mini-stat__body">
+      <span class="mini-stat__label">{% t "Qaror kutmoqda" %}</span>
+      <strong class="mini-stat__value">{{ total_count }}</strong>
+    </span>
+  </div>
+  <div class="mini-stat{% if overdue_count %} mini-stat--danger{% endif %}">
+    <span class="mini-stat__icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+    </span>
+    <span class="mini-stat__body">
+      <span class="mini-stat__label">{% t "{hours} soatdan oshgan" hours=overdue_hours %}</span>
+      <strong class="mini-stat__value">{{ overdue_count }}</strong>
+    </span>
+  </div>
+  {% if can_assign_review %}
+    <div class="mini-stat{% if unassigned_count %} mini-stat--warn{% endif %}">
+      <span class="mini-stat__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="3.5"/><path d="M3.5 20c0-3.6 2.9-6 6.5-6 1.6 0 3 .4 4.1 1.2"/><path d="m16 16 5 5M21 16l-5 5"/></svg>
+      </span>
+      <span class="mini-stat__body">
+        <span class="mini-stat__label">{% t "Biriktirilmagan" %}</span>
+        <strong class="mini-stat__value">{{ unassigned_count }}</strong>
+      </span>
+    </div>
+  {% endif %}
+  <div class="mini-stat">
+    <span class="mini-stat__icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11.5 11.5 14 16 9.5"/><rect x="3.5" y="3.5" width="17" height="17" rx="4"/></svg>
+    </span>
+    <span class="mini-stat__body">
+      <span class="mini-stat__label">{% t "Oxirgi qarorlar" %}</span>
+      <span class="mini-stat__pills">
+        <span class="status st-accepted">{% t "Qabul qilindi" %} {{ decided_accepted }}</span>
+        <span class="status st-returned">{% t "Qaytarildi" %} {{ decided_returned }}</span>
+      </span>
+    </span>
+  </div>
+</div>
+
 {% include "apk/_toolbar.html" %}
 
 <div class="stack">
@@ -22,11 +67,11 @@
     <table class="table table--stack">
       <thead>
         <tr>
-          <th class="col-num" scope="col">&#8470;</th>
+          <th class="col-num" scope="col">#</th>
           <th scope="col">{% t "APK" %}</th>
           <th scope="col">{% t "Kursant" %}</th>
           <th scope="col">{% t "Chilonzor xodimi" %}</th>
-          <th class="col-count" scope="col">{% t "Topilmalar" %}</th>
+          <th class="col-count" scope="col" title="{% t 'IP / domen / Telegram ID' %}">{% t "Topilmalar" %}</th>
           <th scope="col">{% t "Yuborilgan" %}</th>
           <th scope="col">{% t "Kutish" %}</th>
           <th class="col-action" scope="col"><span class="sr-only">{% t "Yuklab olish" %}</span></th>
@@ -35,26 +80,73 @@
       <tbody>
         {% for item in pending %}
           <tr data-href="{% url 'apk:submission_detail' item.pk %}"{% if item.is_overdue %} class="is-overdue"{% endif %}>
-            <td class="col-num" data-label="&#8470;">{{ item.pk }}</td>
+            <td class="col-num" data-label="#">{{ item.pk }}</td>
             <td data-label="{% t 'APK' %}">
-              <div>
-                <a href="{% url 'apk:submission_detail' item.pk %}" class="cell-title">{{ item.file_name }}</a>
-                <span class="cell-sub">{{ item.chat_title|default:"-" }}{% if item.return_count %} · {% t "qaytarilgan" %}: {{ item.return_count }}{% endif %}</span>
+              <div class="file-cell">
+                <span class="file-cell__icon{% if item.is_link %} is-link{% endif %}" aria-hidden="true">
+                  {% if item.is_link %}
+                    <svg viewBox="0 0 24 24" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3.2-3.2a4.5 4.5 0 0 0-6.4-6.4L12 5.6"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3.2 3.2a4.5 4.5 0 0 0 6.4 6.4l1.2-1.2"/></svg>
+                  {% else %}
+                    <svg viewBox="0 0 24 24" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5V8Z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg>
+                  {% endif %}
+                </span>
+                <div class="file-cell__text">
+                  <a href="{% url 'apk:submission_detail' item.pk %}" class="cell-title">{{ item.file_name }}</a>
+                  <span class="cell-sub cell-sub--dots">
+                    <span>{{ item.chat_title|default:"-" }}</span>
+                    {% if item.return_count %}<span class="chip chip--warn">{% t "qaytarilgan" %}: {{ item.return_count }}</span>{% endif %}
+                  </span>
+                </div>
               </div>
             </td>
-            <td data-label="{% t 'Kursant' %}">{{ item.assigned_to|default:"-" }}</td>
-            <td data-label="{% t 'Chilonzor xodimi' %}">
-              {% if item.review_assigned_to %}{{ item.review_assigned_to }}{% else %}<span class="muted">{% t "Biriktirilmagan" %}</span>{% endif %}
+            <td data-label="{% t 'Kursant' %}">
+              {% if item.assigned_to %}
+                <span class="assignee">
+                  {% include "apk/_org_avatar.html" with profile=item.assigned_to %}
+                  <span class="assignee__name">{{ item.assigned_to }}</span>
+                </span>
+              {% else %}<span class="assignee--none">-</span>{% endif %}
             </td>
-            <td class="col-count" data-label="{% t 'IP / Domen / TG' %}">{{ item.ip_count }} / {{ item.domain_count }} / {{ item.telegram_count }}</td>
-            <td data-label="{% t 'Yuborilgan' %}">{{ item.sent_at|date:"d.m.Y H:i" }}</td>
-            <td data-label="{% t 'Kutish' %}"><span class="wait">{{ item.wait_label }}</span></td>
-            <td class="col-action" data-label="{% t 'APK' %}">
-              {% if item.is_link %}
-                <a href="{{ item.source_url }}" class="btn btn--sm" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">↗</span> {% t "Havolani ochish" %}</a>
+            <td data-label="{% t 'Chilonzor xodimi' %}">
+              {% if item.review_assigned_to %}
+                <span class="assignee">
+                  {% include "apk/_org_avatar.html" with profile=item.review_assigned_to %}
+                  <span class="assignee__name">{{ item.review_assigned_to }}</span>
+                </span>
               {% else %}
-                <a href="{% url 'apk:submission_download' item.pk %}" class="btn btn--sm" title="{% t 'APK faylini yuklab olish' %}"><span aria-hidden="true">↓</span> {% t "Yuklab olish" %}</a>
+                <span class="chip chip--warn chip--dashed">{% t "Biriktirilmagan" %}</span>
               {% endif %}
+            </td>
+            <td class="col-count" data-label="{% t 'Topilmalar' %}">
+              <span class="finds">
+                <span class="find{% if not item.ip_count %} is-zero{% endif %}" title="{% t 'IP manzil' %}"><span class="find__key">IP</span>{{ item.ip_count }}</span>
+                <span class="find{% if not item.domain_count %} is-zero{% endif %}" title="{% t 'Domen' %}"><span class="find__key">{% t "Domen" %}</span>{{ item.domain_count }}</span>
+                <span class="find{% if not item.telegram_count %} is-zero{% endif %}" title="{% t 'Telegram ID' %}"><span class="find__key">TG</span>{{ item.telegram_count }}</span>
+              </span>
+            </td>
+            <td data-label="{% t 'Yuborilgan' %}">
+              <span class="date-cell"><span>{{ item.sent_at|date:"d.m.Y" }}</span><span class="date-cell__time">{{ item.sent_at|date:"H:i" }}</span></span>
+            </td>
+            <td data-label="{% t 'Kutish' %}">
+              <span class="wait">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                {{ item.wait_label }}
+              </span>
+            </td>
+            <td class="col-action" data-label="">
+              <div class="row-actions">
+                {% if item.is_link %}
+                  <a href="{{ item.source_url }}" class="btn btn--sm" target="_blank" rel="noopener noreferrer" title="{% t 'Havolani ochish' %}">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>
+                    <span class="btn__label">{% t "Havolani ochish" %}</span>
+                  </a>
+                {% else %}
+                  <a href="{% url 'apk:submission_download' item.pk %}" class="btn btn--sm" title="{% t 'APK faylini yuklab olish' %}">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>
+                    <span class="btn__label">{% t "Yuklab olish" %}</span>
+                  </a>
+                {% endif %}
+              </div>
             </td>
           </tr>
         {% empty %}
@@ -65,15 +157,20 @@
     {% include "apk/_pager.html" %}
   </section>
 
-  <section class="card">
+  <section class="card decisions">
     <div class="card__head">
-      <h2>{% t "Oxirgi qarorlar" %}</h2>
-      <span class="meta">{% t "so'nggi 50 ta" %}</span>
+      <h2>
+        <span class="decisions__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.3-5.6L4 8.7"/><path d="M4 4v4.7h4.7M12 8v4l3 2"/></svg>
+        </span>
+        {% t "Oxirgi qarorlar" %}
+      </h2>
+      <span class="chip">{% t "so'nggi 50 ta" %}</span>
     </div>
     <table class="table table--stack">
       <thead>
         <tr>
-          <th class="col-num" scope="col">&#8470;</th>
+          <th class="col-num" scope="col">#</th>
           <th scope="col">{% t "APK" %}</th>
           <th scope="col">{% t "Kursant" %}</th>
           <th scope="col">{% t "Qaror" %}</th>
@@ -85,13 +182,33 @@
       <tbody>
         {% for item in decided %}
           <tr data-href="{% url 'apk:submission_detail' item.pk %}">
-            <td class="col-num" data-label="&#8470;">{{ item.pk }}</td>
-            <td data-label="{% t 'APK' %}"><a href="{% url 'apk:submission_detail' item.pk %}">{{ item.file_name }}</a></td>
-            <td data-label="{% t 'Kursant' %}">{{ item.assigned_to|default:"-" }}</td>
+            <td class="col-num" data-label="#">{{ item.pk }}</td>
+            <td data-label="{% t 'APK' %}"><a href="{% url 'apk:submission_detail' item.pk %}" class="cell-title">{{ item.file_name }}</a></td>
+            <td data-label="{% t 'Kursant' %}">
+              {% if item.assigned_to %}
+                <span class="assignee">
+                  {% include "apk/_org_avatar.html" with profile=item.assigned_to %}
+                  <span class="assignee__name">{{ item.assigned_to }}</span>
+                </span>
+              {% else %}<span class="assignee--none">-</span>{% endif %}
+            </td>
             <td data-label="{% t 'Qaror' %}"><span class="status {{ item.status_color }}">{{ item.status_label }}</span></td>
-            <td data-label="{% t 'Kim' %}">{{ item.reviewed_by|default:"-" }}</td>
-            <td data-label="{% t 'Qachon' %}">{{ item.reviewed_at|date:"d.m.Y H:i" }}</td>
-            <td data-label="{% t 'Izoh' %}" class="muted">{{ item.review_note|truncatechars:80|default:"-" }}</td>
+            <td data-label="{% t 'Kim' %}">
+              {% if item.reviewed_by %}
+                <span class="assignee">
+                  {% include "apk/_org_avatar.html" with profile=item.reviewed_by %}
+                  <span class="assignee__name">{{ item.reviewed_by }}</span>
+                </span>
+              {% else %}<span class="assignee--none">-</span>{% endif %}
+            </td>
+            <td data-label="{% t 'Qachon' %}">
+              <span class="date-cell"><span>{{ item.reviewed_at|date:"d.m.Y" }}</span><span class="date-cell__time">{{ item.reviewed_at|date:"H:i" }}</span></span>
+            </td>
+            <td data-label="{% t 'Izoh' %}">
+              {% if item.review_note %}
+                <span class="note-cell" title="{{ item.review_note }}">{{ item.review_note|truncatechars:160 }}</span>
+              {% else %}<span class="assignee--none">-</span>{% endif %}
+            </td>
           </tr>
         {% empty %}
           <tr><td colspan="7" class="empty" data-label="">{% t "Hozircha qaror yo'q." %}</td></tr>

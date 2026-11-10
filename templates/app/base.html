@@ -15,8 +15,8 @@
       } catch (error) {}
     </script>
     <link rel="preload" href="{% static 'app/fonts/inter-latin.woff2' %}" as="font" type="font/woff2" crossorigin />
-    <link rel="stylesheet" href="{% static 'app/tokens.css' %}?v=20261105-3" />
-    <link rel="stylesheet" href="{% static 'app/styles.css' %}?v=20261106-2" />
+    <link rel="stylesheet" href="{% static 'app/tokens.css' %}?v=20261108-11" />
+    <link rel="stylesheet" href="{% static 'app/styles.css' %}?v=20261108-13" />
     <script src="{% static 'app/ui.js' %}?v=20261102-13" defer></script>
     {% block extra_head %}{% endblock %}
   </head>
@@ -40,7 +40,7 @@
 
           {% if show_apk_nav %}
           <a href="{% url 'apk:submission_list' %}"
-             class="nav__link{% if request.resolver_match.app_name == 'apk' and request.resolver_match.url_name != 'review_queue' and request.resolver_match.url_name != 'dashboard' and request.resolver_match.url_name != 'osint_tasks' %} is-active{% endif %}">
+             class="nav__link{% if request.resolver_match.app_name == 'apk' and request.resolver_match.url_name != 'review_queue' and request.resolver_match.url_name != 'dashboard' and request.resolver_match.url_name != 'osint_tasks' and request.resolver_match.url_name != 'chilonzor_team' and request.resolver_match.url_name != 'chilonzor_employee_history' %} is-active{% endif %}">
             {% t "APK ishlar" %}
             {% if apk_returned_count %}
               <span class="nav__badge nav__badge--danger" title="{% t 'Tuzatish uchun qaytarilgan' %}">{{ apk_returned_count }}</span>
@@ -64,7 +64,7 @@
           {% endif %}
           {% endif %}
 
-          <a href="{% url 'app:message_inbox' %}" class="nav__link{% if request.resolver_match.url_name == 'message_inbox' or request.resolver_match.url_name == 'message_thread' %} is-active{% endif %}">
+          <a href="{% url 'app:message_inbox' %}" class="nav__link{% if request.resolver_match.url_name == 'message_inbox' or request.resolver_match.url_name == 'message_thread' or request.resolver_match.url_name == 'message_system' or request.resolver_match.url_name == 'message_news' %} is-active{% endif %}">
             {% t "Xabarlar" %}
             {% if message_unread_count %}
               <span class="nav__badge">{% if message_unread_count > 99 %}99+{% else %}{{ message_unread_count }}{% endif %}</span>

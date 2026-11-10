@@ -1,0 +1,4 @@
+{% for item in thread_messages %}
+  {% ifchanged %}<div class="chat__day" data-day="{{ item.created_at|date:'Y-m-d' }}"><span>{{ item.created_at|date:"d.m.Y" }}</span></div>{% endifchanged %}
+  {% include "app/_chat_message.html" %}
+{% endfor %}

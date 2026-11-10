@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model, password_validation
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import Group
 
-from .models import AdminMessage, Users
+from .models import Users
 from .security import (
     get_active_login_block,
     get_login_block,
@@ -365,44 +365,6 @@ class GroupManageForm(BaseStyledPlainForm):
         group.name = self.cleaned_data["name"]
         group.save()
         return group
-
-
-class AdminMessageForm(BaseStyledPlainForm):
-    recipient = forms.ModelChoiceField(
-        queryset=Users.objects.none(),
-        required=False,
-        empty_label=_("Barcha foydalanuvchilar"),
-        label=_("Kimga"),
-        widget=forms.Select(),
-    )
-    body = forms.CharField(
-        label=_("Xabar"),
-        widget=forms.Textarea(
-            attrs={
-                "placeholder": _("Xabar matnini kiriting"),
-                "rows": 5,
-            }
-        ),
-    )
-
-    def __init__(self, *args, recipients=None, initial_recipient=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["recipient"].queryset = recipients or Users.objects.none()
-        if initial_recipient is not None:
-            self.fields["recipient"].initial = initial_recipient
-
-    def clean_body(self):
-        body = (self.cleaned_data.get("body") or "").strip()
-        if not body:
-            raise forms.ValidationError(translate("Xabar matni bo'sh bo'lmasligi kerak."))
-        return body
-
-    def save(self, *, sender):
-        return AdminMessage.objects.create(
-            sender=sender,
-            recipient=self.cleaned_data.get("recipient"),
-            body=self.cleaned_data["body"],
-        )
 
 
 class UserFilterForm(BaseStyledPlainForm):

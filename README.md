@@ -133,7 +133,7 @@ python manage.py migrate
 python manage.py createsuperuser
 python manage.py runserver
 ```
-`python manage.py demo_data` - har bir rolega bittadan demo hisob (admin1, mvd1, kursant1, osint1, chilonzor1, chilonzor_oper1, chilonzor_01_admin, chilonzor_02_admin, chilonzor_03_admin) va namunaviy APK ishlar;
+`python manage.py demo_data` - har bir rolega bittadan demo hisob (admin1, mvd1, kursant1, osint1, chilonzor1, chilonzor_oper1, chilonzor_hub1, chilonzor_xodim1, chilonzor_01_admin, chilonzor_02_admin, chilonzor_03_admin) va namunaviy APK ishlar;
 `--clear` bilan o'chiriladi. Baza: SQLite (`chilonzor_db.sqlite3`), lokalda ham Docker ichida ham.
 Migratsiyalar MVD va Chilonzor guruhlarini avtomatik yaratadi.
 

@@ -1,4 +1,5 @@
 from pathlib import Path
+import mimetypes
 import os
 
 
@@ -95,6 +96,9 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# Windows'dagi Python .webp turini bilmasligi mumkin; lokal server rasmni to'g'ri turi bilan bersin.
+mimetypes.add_type("image/webp", ".webp")
 
 STORAGES = {
     "default": {

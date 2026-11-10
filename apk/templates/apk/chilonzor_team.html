@@ -1,7 +1,8 @@
 {% extends "app/base.html" %}
-{% load ui_i18n %}
+{% load static ui_i18n %}
 
 {% block title %}{% t "Chilonzor jamoasi" %}{% endblock %}
+{% block body_class %}team-page glass-ui{% endblock %}
 
 {% block content %}
 <header class="page-head">
@@ -11,18 +12,40 @@
   </div>
 </header>
 
-<div class="team-average">
-  <span class="team-average__label">{% t "Jamoa o'rtachasi" %}</span>
-  <strong class="team-average__value">{{ average_accepted_30d }}</strong>
-  <span class="team-average__hint">{% t "Oxirgi 30 kunda qabul qilingan ishlar" %}</span>
+<div class="team-stats">
+  <div class="team-stat">
+    <span class="team-stat__icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M7 17v-6M12 17V7M17 17v-3"/></svg>
+    </span>
+    <div class="team-stat__body">
+      <span class="team-stat__label">{% t "Jamoa o'rtachasi" %}</span>
+      <strong class="team-stat__value">{{ average_accepted_30d }}</strong>
+      <span class="team-stat__hint">{% t "Oxirgi 30 kunda qabul qilingan ishlar" %}</span>
+    </div>
+  </div>
+  <div class="team-stat team-stat--alt">
+    <span class="team-stat__icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.4c1.8.8 3 2.8 3 5.6"/></svg>
+    </span>
+    <div class="team-stat__body">
+      <span class="team-stat__label">{% t "Xodimlar" %}</span>
+      <strong class="team-stat__value">{{ workers|length }}</strong>
+      <span class="team-stat__hint">
+        {% if is_super_admin %}{% t "Jamoalar" %}: {{ teams|length }} · {% t "Biriktirilmagan" %}: {{ unassigned_employees|length }}{% else %}{{ teams.0.name }}{% endif %}
+      </span>
+    </div>
+  </div>
 </div>
 
-<section class="org-chart" aria-label="{% t 'Chilonzor boshqaruv tuzilmasi' %}">
+<section class="org-chart" data-org-chart aria-label="{% t 'Chilonzor boshqaruv tuzilmasi' %}">
   {% if root_admin %}
     <div class="org-chart__root-area">
       <div class="org-node org-node--root">
-        <span class="org-node__role">{% t "Chilonzor admin 01" %}</span>
-        <strong>{{ root_admin.account.username }}</strong>
+        {% include "apk/_org_avatar.html" with profile=root_admin %}
+        <span class="org-node__text">
+          <span class="org-node__role">{% t "Chilonzor admin 01" %}</span>
+          <strong>{{ root_admin.account.username }}</strong>
+        </span>
       </div>
     </div>
   {% endif %}
@@ -31,21 +54,29 @@
     {% for team in teams %}
       <section class="org-chart__branch">
         <div class="org-node org-node--manager">
-          <span class="org-node__role">{{ team.name }}</span>
-          <strong>{{ team.manager.account.username }}</strong>
-          <span>{{ team.manager }}</span>
+          {% include "apk/_org_avatar.html" with profile=team.manager %}
+          <span class="org-node__text">
+            <span class="org-node__role">{{ team.name }}</span>
+            <strong>{{ team.manager.account.username }}</strong>
+            <span class="org-node__login">{{ team.manager }}</span>
+          </span>
+          <span class="org-node__count" aria-label="{% t 'Xodimlar' %}: {{ team.employees|length }}">{{ team.employees|length }}</span>
         </div>
 
         <div class="org-chart__employees">
           {% for employee in team.employees %}
             <a class="org-node org-node--employee {{ employee.row_rating_class }}"
                href="{% url 'apk:chilonzor_employee_history' employee.pk %}">
-              <strong>{{ employee }}</strong>
-              <span class="org-node__login">{{ employee.account.username }}</span>
-              <span class="org-node__performance">
-                <span>{{ employee.accepted_30d }} {% t "qabul qilingan ish" %}</span>
-                <span class="employee-rating {{ employee.rating_class }}">{{ employee.rating_label }}</span>
+              {% include "apk/_org_avatar.html" with profile=employee %}
+              <span class="org-node__text">
+                <strong>{{ employee }}</strong>
+                <span class="org-node__login">{{ employee.account.username }}</span>
+                <span class="org-node__performance">
+                  <span>{{ employee.accepted_30d }} {% t "qabul qilingan ish" %}</span>
+                  <span class="employee-rating {{ employee.rating_class }}">{{ employee.rating_label }}</span>
+                </span>
               </span>
+              <svg class="org-node__go" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
             </a>
           {% empty %}
             <div class="org-node org-node--empty">{% t "Hozircha xodim qo'shilmagan" %}</div>
@@ -64,8 +95,12 @@
     <div class="org-unassigned__list">
       {% for employee in unassigned_employees %}
         <a class="org-node org-node--employee" href="{% url 'apk:chilonzor_employee_history' employee.pk %}">
-          <strong>{{ employee }}</strong>
-          <span class="org-node__login">{{ employee.account.username }}</span>
+          {% include "apk/_org_avatar.html" with profile=employee %}
+          <span class="org-node__text">
+            <strong>{{ employee }}</strong>
+            <span class="org-node__login">{{ employee.account.username }}</span>
+          </span>
+          <svg class="org-node__go" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
         </a>
       {% endfor %}
     </div>
@@ -73,48 +108,62 @@
 {% endif %}
 
 {% if can_add_employee %}
-  <div class="grid-2 org-forms">
-    <section class="card">
-      <div class="card__head"><h2>{% t "Yangi xodim qo'shish" %}</h2></div>
-      <form method="post">
+  <div class="org-forms">
+    <section class="team-form">
+      <header class="team-form__head">
+        <span class="team-form__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M19 8v6M16 11h6"/></svg>
+        </span>
+        <h2>{% t "Yangi xodim qo'shish" %}</h2>
+      </header>
+      <form method="post" class="team-form__form">
         {% csrf_token %}<input type="hidden" name="action" value="create_employee" />
-        <div class="card__body">
+        <div class="team-form__fields">
           {% for field in create_employee_form %}
-            <div class="field">
-              <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            <div class="field float-field{% if field.field.widget.input_type == 'select' %} float-field--select{% endif %}{% if field.name == 'first_name' or field.name == 'last_name' or field.name == 'password1' or field.name == 'password2' %} float-field--half{% endif %}{% if field.errors %} has-error{% endif %}">
               {{ field }}
+              <label for="{{ field.id_for_label }}">{{ field.label }}</label>
               {% for error in field.errors %}<span class="field__error">{{ error }}</span>{% endfor %}
             </div>
           {% endfor %}
           {% for error in create_employee_form.non_field_errors %}<p class="field__error">{{ error }}</p>{% endfor %}
         </div>
-        <div class="card__foot"><button type="submit" class="btn btn--primary">{% t "Xodim yaratish" %}</button></div>
+        <button type="submit" class="btn btn--primary team-form__submit">{% t "Xodim yaratish" %}</button>
       </form>
     </section>
 
     {% if has_unassigned_employees %}
-      <section class="card">
-        <div class="card__head"><h2>{% t "Mavjud xodimni jamoaga qo'shish" %}</h2></div>
-        <form method="post">
+      <section class="team-form">
+        <header class="team-form__head">
+          <span class="team-form__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3.2-3.2a4.5 4.5 0 0 0-6.4-6.4L12 5.6"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3.2 3.2a4.5 4.5 0 0 0 6.4 6.4l1.2-1.2"/></svg>
+          </span>
+          <h2>{% t "Mavjud xodimni jamoaga qo'shish" %}</h2>
+        </header>
+        <form method="post" class="team-form__form">
           {% csrf_token %}<input type="hidden" name="action" value="attach_employee" />
-          <div class="card__body">
-            <div class="field">
-              <label for="{{ attach_employee_form.employee.id_for_label }}">{{ attach_employee_form.employee.label }}</label>
+          <div class="team-form__fields">
+            <div class="field float-field float-field--select{% if attach_employee_form.employee.errors %} has-error{% endif %}">
               {{ attach_employee_form.employee }}
+              <label for="{{ attach_employee_form.employee.id_for_label }}">{{ attach_employee_form.employee.label }}</label>
               {% for error in attach_employee_form.employee.errors %}<span class="field__error">{{ error }}</span>{% endfor %}
             </div>
             {% if can_choose_team %}
-              <div class="field">
-                <label for="{{ attach_employee_form.manager.id_for_label }}">{{ attach_employee_form.manager.label }}</label>
+              <div class="field float-field float-field--select{% if attach_employee_form.manager.errors %} has-error{% endif %}">
                 {{ attach_employee_form.manager }}
+                <label for="{{ attach_employee_form.manager.id_for_label }}">{{ attach_employee_form.manager.label }}</label>
                 {% for error in attach_employee_form.manager.errors %}<span class="field__error">{{ error }}</span>{% endfor %}
               </div>
             {% endif %}
           </div>
-          <div class="card__foot"><button type="submit" class="btn">{% t "Jamoaga biriktirish" %}</button></div>
+          <button type="submit" class="btn team-form__submit team-form__submit--ghost">{% t "Jamoaga biriktirish" %}</button>
         </form>
       </section>
     {% endif %}
   </div>
 {% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'app/team.js' %}?v=20261108-1" defer></script>
 {% endblock %}

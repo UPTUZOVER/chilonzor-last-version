@@ -847,6 +847,27 @@ TRANSLATIONS.update(
         "Tuman bo'yicha jinoyat statistikasi": {
             "ru": "\u0421\u0442\u0430\u0442\u0438\u0441\u0442\u0438\u043a\u0430 \u043f\u0440\u0435\u0441\u0442\u0443\u043f\u043b\u0435\u043d\u0438\u0439 \u043f\u043e \u0440\u0430\u0439\u043e\u043d\u0443",
         },
+        "Word hisobot": {
+            "ru": "\u041e\u0442\u0447\u0451\u0442 Word",
+        },
+        "{hours} soatdan oshgan": {
+            "ru": "\u0411\u043e\u043b\u0435\u0435 {hours} \u0447",
+        },
+        "Olinmagan": {
+            "ru": "Не взята",
+        },
+        "Xodimlar": {
+            "ru": "\u0421\u043e\u0442\u0440\u0443\u0434\u043d\u0438\u043a\u0438",
+        },
+        "Jamoalar": {
+            "ru": "\u041a\u043e\u043c\u0430\u043d\u0434\u044b",
+        },
+        "Biriktirilmagan": {
+            "ru": "\u041d\u0435 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u044b",
+        },
+        "Himoyalangan ulanish": {
+            "ru": "Защищённое соединение",
+        },
         "Rang HEX formatida bo'lishi kerak. Masalan: #23b383": {
             "ru": "\u0426\u0432\u0435\u0442 \u0434\u043e\u043b\u0436\u0435\u043d \u0431\u044b\u0442\u044c \u0432 HEX-\u0444\u043e\u0440\u043c\u0430\u0442\u0435. \u041d\u0430\u043f\u0440\u0438\u043c\u0435\u0440: #23b383",
         },

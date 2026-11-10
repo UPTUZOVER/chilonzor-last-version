@@ -29,6 +29,7 @@ from apk.permissions import (
     GROUP_CHILONZOR_HUB,
     GROUP_CHILONZOR_OPER,
     GROUP_MVD,
+    ROLE_GROUP_LABELS,
 )
 from app.models import Users
 
@@ -47,7 +48,14 @@ ACCOUNTS = {
     "chilonzor_02_admin": ("Chilonzor", "Admin 02", GROUP_CHILONZOR_02_ADMIN, False, False),
     "chilonzor_03_admin": ("Chilonzor", "Admin 03", GROUP_CHILONZOR_03_ADMIN, False, False),
     "chilonzor_oper1": ("Chilonzor", "Oper", GROUP_CHILONZOR_OPER, False, False),
+    "chilonzor_hub1": ("Chilonzor", "Hub", GROUP_CHILONZOR_HUB, False, False),
+    "chilonzor_xodim1": ("Chilonzor", "Xodim", GROUP_CHILONZOR, False, False),
     "osint1": ("OSINT", "Kursant", None, False, True),
+}
+# Xodim -> jamoa admini: 02 admin Oper jamoasini, 03 admin Hub jamoasini boshqaradi.
+TEAM_MANAGERS = {
+    "chilonzor1": "chilonzor_02_admin",
+    "chilonzor_hub1": "chilonzor_03_admin",
 }
 KURSANT_KINDS = {
     "kursant1": Kursant.TYPE_APK,
@@ -96,12 +104,12 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS("Demo ma'lumot tayyor."))
         self.stdout.write(f"  Parol (hammasi uchun): {options['parol']}")
         for username, (first, last, group, is_staff, is_kursant) in ACCOUNTS.items():
-            role = "Admin" if is_staff else group or (
+            role = "Admin" if is_staff else ROLE_GROUP_LABELS.get(group, group) if group else (
                 "OSINT kursant" if KURSANT_KINDS.get(username) == Kursant.TYPE_OSINT
                 else "APK kursant" if is_kursant
                 else "-"
             )
-            self.stdout.write(f"  {username:<11} {role:<10} {first} {last}")
+            self.stdout.write(f"  {username:<20} {role:<20} {first} {last}")
         self.stdout.write("  Kirish: /login/    O'chirish: python manage.py demo_data --clear")
 
     def make_accounts(self, password):
@@ -140,9 +148,9 @@ class Command(BaseCommand):
                 kursant.is_active = True
                 kursant.save(update_fields=["kind", "is_active"])
             profiles[username] = profile
-        demo_worker = profiles["chilonzor1"]
-        demo_worker.chilonzor_manager = profiles["chilonzor_02_admin"]
-        demo_worker.save(update_fields=["chilonzor_manager"])
+        for worker, manager in TEAM_MANAGERS.items():
+            profiles[worker].chilonzor_manager = profiles[manager]
+            profiles[worker].save(update_fields=["chilonzor_manager"])
         return profiles
 
     def make_submissions(self, profiles):

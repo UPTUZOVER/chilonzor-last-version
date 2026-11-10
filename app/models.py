@@ -1,6 +1,9 @@
+import os
+import uuid
+
 from django.contrib.auth import get_user_model
 from django.db import models
-from django.db.models import Q
+from django.utils import timezone
 
 from .ui_i18n import translate
 
@@ -41,37 +44,42 @@ class Users(models.Model):
             return self.account.username
         return translate("Foydalanuvchi {pk}", pk=self.pk)
 
-    def incoming_messages_queryset(self):
-        return AdminMessage.objects.exclude(sender=self).filter(
-            Q(recipient=self) | Q(recipient__isnull=True)
-        )
+    def unread_direct_queryset(self):
+        """Shaxsan menga kelgan (suhbat va bildirishnoma) o'qilmagan xabarlar."""
+        return AdminMessage.objects.filter(recipient=self, read_at__isnull=True).exclude(sender=self)
 
-    def unread_messages_queryset(self):
-        queryset = self.incoming_messages_queryset()
+    def unread_news_queryset(self):
+        """Hammaga yuborilgan e'lonlardan oxirgi ko'rishdan keyin kelganlari."""
+        queryset = AdminMessage.objects.filter(recipient__isnull=True).exclude(sender=self)
         if self.messages_last_read_at:
             queryset = queryset.filter(created_at__gt=self.messages_last_read_at)
         return queryset
 
-    def unread_message_count(self):
-        return self.unread_messages_queryset().count()
+    def unread_message_count(self, include_news=True):
+        count = self.unread_direct_queryset().count()
+        if include_news:
+            count += self.unread_news_queryset().count()
+        return count
 
-    def mark_messages_read(self):
-        latest_message_time = (
-            self.incoming_messages_queryset()
-            .order_by("-created_at")
-            .values_list("created_at", flat=True)
-            .first()
-        )
-        if not latest_message_time:
-            return False
-        if self.messages_last_read_at and latest_message_time <= self.messages_last_read_at:
-            return False
-        self.messages_last_read_at = latest_message_time
-        self.save(update_fields=["messages_last_read_at"])
-        return True
+
+def chat_upload_path(instance, filename):
+    """Fayl nomi foydalanuvchidan olinmaydi: tasodifiy nom, asl kengaytma."""
+    extension = os.path.splitext(filename)[1].lower()[:10]
+    return f"chat/{timezone.now():%Y/%m}/{uuid.uuid4().hex}{extension}"
 
 
 class AdminMessage(models.Model):
+    """Ichki xabar: shaxsiy suhbat, tizim bildirishnomasi yoki hammaga e'lon.
+
+    - recipient bo'sh  -> hammaga e'lon (E'lonlar kanali);
+    - is_system=True   -> ish jarayonidan avtomatik bildirishnoma;
+    - qolganlari       -> ikki foydalanuvchi orasidagi suhbat.
+    """
+
+    ATTACHMENT_IMAGE = "image"
+    ATTACHMENT_AUDIO = "audio"
+    ATTACHMENT_FILE = "file"
+
     sender = models.ForeignKey(
         Users,
         on_delete=models.CASCADE,
@@ -87,7 +95,13 @@ class AdminMessage(models.Model):
         blank=True,
         null=True,
     )
-    body = models.TextField()
+    body = models.TextField(blank=True)
+    is_system = models.BooleanField(default=False, db_index=True)
+    attachment = models.FileField(upload_to=chat_upload_path, blank=True)
+    attachment_name = models.CharField(max_length=255, blank=True)
+    attachment_kind = models.CharField(max_length=10, blank=True)
+    attachment_size = models.PositiveIntegerField(default=0)
+    read_at = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -95,6 +109,7 @@ class AdminMessage(models.Model):
         indexes = [
             models.Index(fields=["recipient", "created_at"]),
             models.Index(fields=["sender", "created_at"]),
+            models.Index(fields=["recipient", "read_at"]),
         ]
 
     def __str__(self):
@@ -118,6 +133,24 @@ class AdminMessage(models.Model):
         if self.is_broadcast:
             return translate("Barcha foydalanuvchilar")
         return str(self.recipient)
+
+
+class MessageReaction(models.Model):
+    """Xabarga emoji reaksiya: har foydalanuvchi bitta xabarga bitta reaksiya."""
+
+    message = models.ForeignKey(AdminMessage, on_delete=models.CASCADE, related_name="reactions")
+    user = models.ForeignKey(Users, on_delete=models.CASCADE, related_name="message_reactions")
+    emoji = models.CharField(max_length=16)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at", "id"]
+        constraints = [
+            models.UniqueConstraint(fields=["message", "user"], name="one_reaction_per_user"),
+        ]
+
+    def __str__(self):
+        return f"{self.user} {self.emoji} #{self.message_id}"
 
 
 class LoginBlock(models.Model):

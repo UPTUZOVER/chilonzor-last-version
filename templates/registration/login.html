@@ -8,10 +8,42 @@
 <section class="auth">
   <div class="auth__card">
     <div class="auth__brand">
-      <img class="auth__emblem" src="{% static 'app/images/iiv-emblem.jpg' %}" alt="O‘zbekiston Respublikasi Ichki ishlar vazirligi emblemasi" />
+      <div class="auth__seal">
+        <svg class="auth__ring" viewBox="0 0 216 216" aria-hidden="true" focusable="false">
+          <circle cx="108" cy="108" r="80" fill="none" stroke="currentColor" stroke-opacity="0.3" stroke-width="1"/>
+          <g class="auth__ring-ticks">
+            <circle cx="108" cy="108" r="87" fill="none" stroke="currentColor" stroke-opacity="0.28" stroke-width="4" stroke-dasharray="1.2 4.874"/>
+          </g>
+          <circle cx="108" cy="108" r="96" fill="none" stroke="currentColor" stroke-opacity="0.14" stroke-width="1"/>
+          <g class="auth__ring-arcs">
+            <circle cx="108" cy="108" r="96" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="96 205.593"/>
+          </g>
+          <g transform="translate(40.12 40.12)">
+            <circle class="auth__node-bg" r="10"/>
+            <g class="auth__node-icon" transform="translate(-6 -6) scale(0.5)"><path d="M12 3 5 6v5c0 4.4 3 8.2 7 9.5 4-1.3 7-5.1 7-9.5V6l-7-3Z"/></g>
+          </g>
+          <g transform="translate(175.88 40.12)">
+            <circle class="auth__node-bg" r="10"/>
+            <g class="auth__node-icon" transform="translate(-6 -6) scale(0.5)"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></g>
+          </g>
+          <g transform="translate(175.88 175.88)">
+            <circle class="auth__node-bg" r="10"/>
+            <g class="auth__node-icon" transform="translate(-6 -6) scale(0.5)"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></g>
+          </g>
+          <g transform="translate(40.12 175.88)">
+            <circle class="auth__node-bg" r="10"/>
+            <g class="auth__node-icon" transform="translate(-6 -6) scale(0.5)"><circle cx="8" cy="15" r="4"/><path d="m10.8 12.2 8.2-8.2M16 7l3 3M14 9l2 2"/></g>
+          </g>
+        </svg>
+        <picture class="auth__emblem-frame">
+          <source type="image/webp" srcset="{% static 'app/images/iiv-emblem-148.webp' %} 1x, {% static 'app/images/iiv-emblem-296.webp' %} 2x, {% static 'app/images/iiv-emblem-444.webp' %} 3x" />
+          <img class="auth__emblem" src="{% static 'app/images/iiv-emblem.jpg' %}" width="148" height="148" alt="O‘zbekiston Respublikasi Ichki ishlar vazirligi emblemasi" />
+        </picture>
+      </div>
       <p class="auth__agency">O‘ZBEKISTON RESPUBLIKASI<br />ICHKI ISHLAR VAZIRLIGI</p>
-      <h1>Raqamli Qalqon <span class="muted">·</span> {% t "APK tahlil" %}</h1>
+      <h1>Raqamli Qalqon <span class="muted">·</span> <span class="auth__accent">{% t "APK tahlil" %}</span></h1>
       <p class="meta">{% t "Xizmat hisobingiz bilan kiring." %}</p>
+      {% if request.is_secure %}<p class="auth__secure">{% t "Himoyalangan ulanish" %} · HTTPS</p>{% endif %}
     </div>
 
     <form method="post" class="auth__form" novalidate>
@@ -22,7 +54,14 @@
       {% for field in form %}
         <div class="field{% if field.errors %} has-error{% endif %}">
           <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-          {{ field }}
+          <div class="auth__input">
+            {% if field.name == "password" %}
+              <svg class="auth__input-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+            {% else %}
+              <svg class="auth__input-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+            {% endif %}
+            {{ field }}
+          </div>
           {% for error in field.errors %}<span class="field__error">{{ error }}</span>{% endfor %}
         </div>
       {% endfor %}
@@ -33,4 +72,8 @@
     <p class="auth__note">{% t "Muammo bo'lsa administratorga murojaat qiling." %}</p>
   </div>
 </section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'app/auth.js' %}?v=20261108-1" defer></script>
 {% endblock %}
