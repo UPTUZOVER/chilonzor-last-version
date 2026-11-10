@@ -31,6 +31,7 @@ urlpatterns = [
     # Chilonzor
     path("review/", views.review_queue_view, name="review_queue"),
     path("team/", views.chilonzor_team_view, name="chilonzor_team"),
+    path("rating/", views.kursant_rating_view, name="rating"),
     path(
         "team/employees/<int:pk>/",
         views.chilonzor_employee_history_view,

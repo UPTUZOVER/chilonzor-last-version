@@ -60,6 +60,7 @@ from .permissions import (
     user_can_view_osint_tasks,
     user_can_review,
     user_can_work,
+    user_has_apk_access,
     user_is_chilonzor,
     user_is_chilonzor_admin,
     user_is_chilonzor_super_admin,
@@ -460,6 +461,7 @@ def _detail_context(request, submission, **overrides):
         "findings_form": FindingsForm(),
         "note_form": AnalysisNoteForm(initial={"analysis_note": submission.analysis_note}),
         "review_form": ReviewForm(),
+        "score_choices": list(range(1, 11)),
     }
     context.update(overrides)
     return context
@@ -684,6 +686,27 @@ def analysis_note_view(request, pk):
 
 
 @login_required
+def kursant_rating_view(request):
+    """Kursantlar reytingi: tizimdagi har bir rol ko'radi."""
+    from .rating import kursant_rating, tier_legend
+
+    user = request.user
+    if not (user.is_staff or user_has_apk_access(user) or user_is_osint_kursant(user)):
+        return deny(request, translate("Reytingni ko'rishga ruxsatingiz yo'q."))
+    rows = kursant_rating()
+    return render(
+        request,
+        "apk/rating.html",
+        {
+            "rows": rows,
+            "leaders": [row for row in rows[:3] if row["points"]],
+            "legend": tier_legend(),
+            "current_profile": get_profile_for_user(user),
+        },
+    )
+
+
+@login_required
 @require_POST
 def submission_review_view(request, pk):
     """Chilonzor: qabul qiladi yoki kamchiliklarini yozib qaytaradi."""
@@ -698,8 +721,12 @@ def submission_review_view(request, pk):
 
     try:
         if decision == "accept":
-            workflow.accept(pk, profile, note, is_staff=request.user.is_staff)
-            messages.success(request, translate("Qabul qilindi."))
+            try:
+                score = int(request.POST.get("score") or 0)
+            except ValueError:
+                score = 0
+            workflow.accept(pk, profile, note, is_staff=request.user.is_staff, score=score or None)
+            messages.success(request, translate("Qabul qilindi. Kursantga {score} ball berildi.", score=score))
         elif decision == "return":
             workflow.send_back(pk, profile, note, is_staff=request.user.is_staff)
             messages.warning(request, translate("Kursantga qaytarildi."))

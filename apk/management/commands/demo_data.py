@@ -211,7 +211,7 @@ class Command(BaseCommand):
         workflow.assign_review(
             accepted.pk, chilonzor, profiles["chilonzor_02_admin"]
         )
-        workflow.accept(accepted.pk, chilonzor, "Hammasi to'g'ri.")
+        workflow.accept(accepted.pk, chilonzor, "Hammasi to'g'ri.", score=9)
 
     def clear(self):
         deleted_submissions = 0

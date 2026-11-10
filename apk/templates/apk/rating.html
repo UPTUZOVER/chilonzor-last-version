@@ -1,0 +1,76 @@
+{% extends "app/base.html" %}
+{% load ui_i18n %}
+
+{% block title %}{% t "Kursantlar reytingi" %}{% endblock %}
+{% block body_class %}rating-page glass-ui glass-list{% endblock %}
+
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1>{% t "Kursantlar reytingi" %}</h1>
+    <p class="page-head__desc">{% t "Chilonzor xodimi har bir qabul qilingan tahlilga 1-10 ball qo'yadi. Reyting jami ball bo'yicha, rang esa sifat bo'yicha: o'rtacha ball x qabul qilinish ulushi." %}</p>
+  </div>
+</header>
+
+<div class="rating-legend" aria-label="{% t 'Rang izohi' %}">
+  {% for tier in legend %}
+    <span class="tier-pill tier--{{ tier.key }}"><i aria-hidden="true"></i>{{ tier.label }} <small>{{ tier.range }}</small></span>
+  {% endfor %}
+</div>
+
+{% if leaders %}
+  <section class="podium" aria-label="{% t 'Eng yaxshi kursantlar' %}">
+    {% for row in leaders %}
+      <article class="podium__card tier--{{ row.tier.key }}{% if row.profile.pk == current_profile.pk %} is-me{% endif %}">
+        <span class="podium__place">{{ row.position }}</span>
+        {% include "apk/_org_avatar.html" with profile=row.profile %}
+        <span class="podium__name">{{ row.profile }}</span>
+        <strong class="podium__points">{{ row.points }} <small>{% t "ball" %}</small></strong>
+        <span class="tier-pill tier--{{ row.tier.key }}"><i aria-hidden="true"></i>{{ row.tier.label }}</span>
+      </article>
+    {% endfor %}
+  </section>
+{% endif %}
+
+<section class="table-card">
+  <table class="table table--stack rating-table">
+    <thead>
+      <tr>
+        <th class="col-num" scope="col">#</th>
+        <th scope="col">{% t "Kursant" %}</th>
+        <th class="col-num-right" scope="col">{% t "Jami ball" %}</th>
+        <th class="col-num-right" scope="col">{% t "Qabul qilingan" %}</th>
+        <th class="col-num-right" scope="col">{% t "Qaytarilgan" %}</th>
+        <th class="col-num-right" scope="col">{% t "O'rtacha ball" %}</th>
+        <th scope="col">{% t "Sifat" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+        <tr class="rating-row tier--{{ row.tier.key }}{% if row.profile.pk == current_profile.pk %} is-me{% endif %}">
+          <td class="col-num" data-label="#">{{ row.position }}</td>
+          <td data-label="{% t 'Kursant' %}">
+            <span class="assignee">
+              {% include "apk/_org_avatar.html" with profile=row.profile %}
+              <span class="assignee__name">{{ row.profile }}{% if row.profile.pk == current_profile.pk %} <span class="chip chip--accent">{% t "Siz" %}</span>{% endif %}</span>
+            </span>
+            {% if row.team %}<span class="cell-sub">{{ row.team }}</span>{% endif %}
+          </td>
+          <td class="col-num-right rating-points" data-label="{% t 'Jami ball' %}">{{ row.points }}</td>
+          <td class="col-num-right" data-label="{% t 'Qabul qilingan' %}">{{ row.accepted }}</td>
+          <td class="col-num-right" data-label="{% t 'Qaytarilgan' %}">{{ row.returns }}</td>
+          <td class="col-num-right" data-label="{% t "O'rtacha ball" %}">{{ row.average|default:"—" }}</td>
+          <td data-label="{% t 'Sifat' %}">
+            <span class="quality">
+              <span class="quality__bar" aria-hidden="true"><span style="width: {{ row.quality_width }}%"></span></span>
+              <span class="tier-pill tier--{{ row.tier.key }}"><i aria-hidden="true"></i>{{ row.tier.label }}{% if row.quality is not None %} · {{ row.quality }}{% endif %}</span>
+            </span>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7" class="empty" data-label="">{% t "Faol APK kursantlar topilmadi." %}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

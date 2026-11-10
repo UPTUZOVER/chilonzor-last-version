@@ -192,7 +192,10 @@ def assign_review(submission_id, reviewer_profile, actor_profile):
     return submission
 
 
-def accept(submission_id, reviewer_profile, note="", is_staff=False):
+def accept(submission_id, reviewer_profile, note="", is_staff=False, score=None):
+    if score is None or not 1 <= int(score) <= 10:
+        raise WorkflowError(translate("Qabul qilish uchun kursant ishiga 1 dan 10 gacha ball qo'ying."))
+    score = int(score)
     with transaction.atomic():
         submission = _lock(submission_id)
         if submission.status != ApkSubmission.STATUS_SENT:
@@ -203,18 +206,20 @@ def accept(submission_id, reviewer_profile, note="", is_staff=False):
         submission.reviewed_by = reviewer_profile
         submission.reviewed_at = timezone.now()
         submission.review_note = note
+        submission.score = score
         submission.save(
-            update_fields=["status", "reviewed_by", "reviewed_at", "review_note", "updated_at"]
+            update_fields=["status", "reviewed_by", "reviewed_at", "review_note", "score", "updated_at"]
         )
-        _log(submission, reviewer_profile, ApkEvent.ACTION_ACCEPTED, note)
+        _log(submission, reviewer_profile, ApkEvent.ACTION_ACCEPTED, (f"{score} ball. " + note).strip())
 
     notify_user(
         reviewer_profile,
         submission.assigned_to,
         translate(
-            "#{id} {file} bo'yicha tahlilingiz qabul qilindi.",
+            "#{id} {file} bo'yicha tahlilingiz qabul qilindi. Sizga {score} ball berildi.",
             id=submission.pk,
             file=submission.file_name,
+            score=score,
         ),
     )
     return submission

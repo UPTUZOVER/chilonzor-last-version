@@ -4388,6 +4388,259 @@ tr.is-overdue .wait {
   }
 }
 
+/* 13g. Kursantlar reytingi (body.rating-page) va ball tanlash -------------
+   Besh daraja: to'q qizil, och qizil, oq, och yashil, to'q yashil (--tier-*).
+   Daraja nomi doim matn bilan yoziladi - rang yolg'iz ma'no tashimaydi. */
+
+.tier--t0 { --tier: var(--tier-0); }
+.tier--t1 { --tier: var(--tier-1); }
+.tier--t2 { --tier: var(--tier-2); }
+.tier--t3 { --tier: var(--tier-3); }
+.tier--t4 { --tier: var(--tier-4); }
+.tier--t5 { --tier: var(--tier-5); }
+
+.tier-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px 0 8px;
+  border: 1px solid color-mix(in srgb, var(--tier) 55%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--tier) 16%, transparent);
+  color: var(--glass-text);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-semibold);
+  white-space: nowrap;
+}
+
+.tier-pill i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--tier);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--glass-text) 25%, transparent);
+}
+
+.tier-pill small {
+  color: var(--glass-text-2);
+  font-weight: var(--fw-regular);
+}
+
+.rating-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
+}
+
+/* Eng yaxshi uchtalik. */
+.podium {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+
+.podium__card {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: var(--sp-4);
+  border: 1px solid color-mix(in srgb, var(--tier) 45%, var(--glass-border));
+  border-radius: var(--glass-radius);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--tier) 14%, transparent), var(--glass-surface));
+  box-shadow: var(--glass-shadow);
+  text-align: center;
+}
+
+.podium__card.is-me {
+  box-shadow: var(--glass-shadow), 0 0 0 2px var(--glass-accent);
+}
+
+.podium__place {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  color: var(--glass-text-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-bold);
+}
+
+.podium__card .org-avatar {
+  width: 52px;
+  height: 52px;
+  font-size: var(--fs-body);
+}
+
+.podium__name {
+  color: var(--glass-text);
+  font-weight: var(--fw-semibold);
+}
+
+.podium__points {
+  color: var(--glass-text);
+  font-size: 26px;
+  line-height: 1.1;
+}
+
+.podium__points small {
+  color: var(--glass-text-2);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-regular);
+}
+
+/* Jadval: qator chetida daraja rangi. */
+.rating-page .table td.col-num-right,
+.rating-page .table th.col-num-right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.rating-page .rating-row td {
+  background: color-mix(in srgb, var(--tier) 7%, transparent);
+}
+
+.rating-page .rating-row td:first-child,
+.rating-page .table tbody tr.rating-row[class]:hover td:first-child {
+  box-shadow: inset 4px 0 0 var(--tier);
+}
+
+.rating-page .rating-row.is-me td {
+  background: color-mix(in srgb, var(--glass-accent) 10%, transparent);
+}
+
+.rating-points {
+  color: var(--glass-text);
+  font-size: var(--fs-section);
+  font-weight: var(--fw-bold);
+}
+
+.quality {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.quality__bar {
+  display: block;
+  width: 90px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--chart-grid);
+}
+
+.quality__bar span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--tier);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--glass-text) 18%, transparent);
+}
+
+/* Chilonzor qarori: 1-10 ball tanlash. */
+.score-pick {
+  display: grid;
+  gap: var(--sp-2);
+  min-width: 0;
+  margin: 0 0 var(--sp-4);
+  padding: 0;
+  border: 0;
+}
+
+.score-pick legend {
+  margin-bottom: var(--sp-2);
+  color: var(--c-text-2);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-medium);
+}
+
+.score-pick__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.score-pick__item {
+  --tier: var(--tier-3);
+  cursor: pointer;
+}
+
+.score-pick__item--1, .score-pick__item--2 { --tier: var(--tier-1); }
+.score-pick__item--3, .score-pick__item--4 { --tier: var(--tier-2); }
+.score-pick__item--7, .score-pick__item--8 { --tier: var(--tier-4); }
+.score-pick__item--9, .score-pick__item--10 { --tier: var(--tier-5); }
+
+.score-pick__item span {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--c-border);
+  border-bottom: 3px solid var(--tier);
+  border-radius: 10px;
+  background: var(--c-surface);
+  color: var(--c-text);
+  font-weight: var(--fw-bold);
+  transition: transform 0.12s ease, background-color 0.12s ease;
+}
+
+.score-pick__item:hover span {
+  transform: translateY(-2px);
+}
+
+.score-pick__item input:checked + span {
+  border-color: var(--tier);
+  background: color-mix(in srgb, var(--tier) 28%, var(--c-surface));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--tier) 60%, transparent);
+}
+
+.score-pick__item input:focus-visible + span {
+  outline: 2px solid var(--c-brand);
+  outline-offset: 2px;
+}
+
+.score-note {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-card);
+  background: var(--c-surface);
+}
+
+.score-note > div {
+  display: grid;
+}
+
+.score-note__value {
+  --tier: var(--tier-3);
+}
+
+.score-note__value span {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--tier) 30%, var(--c-surface));
+  box-shadow: inset 0 -3px 0 var(--tier);
+  color: var(--c-text);
+  font-size: var(--fs-section);
+  font-weight: var(--fw-bold);
+}
+
+@media (max-width: 768px) {
+  .quality__bar {
+    display: none;
+  }
+}
+
 /* 14. Moslashuvchanlik: 1280, 1024, 768, 480 ----------------------------- */
 
 @media (max-width: 1280px) {

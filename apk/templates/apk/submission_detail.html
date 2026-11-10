@@ -95,6 +95,17 @@
     </section>
   {% endif %}
 
+  {# --- Qabul qilingan: Chilonzor bergan ball --- #}
+  {% if submission.status == "accepted" and submission.score %}
+    <section class="score-note">
+      <span class="score-note__value score-pick__item--{{ submission.score }}"><span>{{ submission.score }}</span></span>
+      <div>
+        <strong>{% t "Chilonzor bahosi" %}: {{ submission.score }} / 10</strong>
+        <span class="meta">{{ submission.reviewed_by|default:"" }} · {{ submission.reviewed_at|date:"d.m.Y H:i" }}{% if submission.review_note %} · {{ submission.review_note }}{% endif %}</span>
+      </div>
+    </section>
+  {% endif %}
+
   {% if can_assign_review %}
     <section class="card">
       <div class="card__head">
@@ -130,6 +141,18 @@
       <form method="post" action="{% url 'apk:submission_review' submission.pk %}">
         {% csrf_token %}
         <div class="card__body">
+          <fieldset class="score-pick">
+            <legend>{% t "Kursantga ball (qabul qilishda majburiy)" %}</legend>
+            <div class="score-pick__row">
+              {% for value in score_choices %}
+                <label class="score-pick__item score-pick__item--{{ value }}">
+                  <input type="radio" name="score" value="{{ value }}" class="sr-only">
+                  <span>{{ value }}</span>
+                </label>
+              {% endfor %}
+            </div>
+            <span class="field__help">{% t "1-3: ko'p kamchilik · 4-6: qoniqarli · 7-8: yaxshi · 9-10: a'lo" %}</span>
+          </fieldset>
           <div class="field">
             <label for="{{ review_form.note.id_for_label }}">{{ review_form.note.label }}</label>
             {{ review_form.note }}

@@ -383,6 +383,9 @@ class ApkSubmission(models.Model):
     )
     reviewed_at = models.DateTimeField(null=True, blank=True)
     review_note = models.TextField(blank=True, default="", verbose_name=_("Chilonzor izohi"))
+    score = models.PositiveSmallIntegerField(
+        null=True, blank=True, verbose_name=_("Chilonzor bahosi (1-10 ball)")
+    )
 
     created_at = models.DateTimeField(auto_now_add=True, verbose_name=_("Kelgan vaqt"))
     updated_at = models.DateTimeField(auto_now=True)

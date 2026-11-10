@@ -330,9 +330,10 @@ class WorkflowViewTests(RolesMixin, TestCase):
     def send(self):
         self.client.post(reverse("apk:submission_send", args=[self.pk]))
 
-    def review(self, decision, note=""):
+    def review(self, decision, note="", score=8):
         return self.client.post(
-            reverse("apk:submission_review", args=[self.pk]), {"decision": decision, "note": note}
+            reverse("apk:submission_review", args=[self.pk]),
+            {"decision": decision, "note": note, "score": score},
         )
 
     def test_full_cycle_with_return_and_accept(self):

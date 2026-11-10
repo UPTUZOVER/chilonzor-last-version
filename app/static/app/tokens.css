@@ -188,6 +188,13 @@
   --chat-mine-meta: rgba(255, 255, 255, 0.8);
   --chat-read: #ffffff;
   --chat-bubble-shadow: rgba(15, 23, 41, 0.08);
+  /* Reyting darajalari: to'q qizil -> och qizil -> oq -> och yashil -> to'q yashil */
+  --tier-1: #b91c1c;
+  --tier-2: #f87171;
+  --tier-3: #cbd5e1;
+  --tier-4: #4ade80;
+  --tier-5: #15803d;
+  --tier-0: #94a3b8;
 
   color-scheme: light;
 }
@@ -301,6 +308,13 @@
   --chat-mine-meta: rgba(255, 255, 255, 0.72);
   --chat-read: #7dd3fc;
   --chat-bubble-shadow: rgba(0, 0, 0, 0.3);
+  /* Reyting darajalari */
+  --tier-1: #dc2626;
+  --tier-2: #fca5a5;
+  --tier-3: #f1f5f9;
+  --tier-4: #86efac;
+  --tier-5: #16a34a;
+  --tier-0: #64748b;
 
   color-scheme: dark;
 }
@@ -411,6 +425,13 @@
     --chat-mine-meta: rgba(255, 255, 255, 0.72);
     --chat-read: #7dd3fc;
     --chat-bubble-shadow: rgba(0, 0, 0, 0.3);
+    /* Reyting darajalari */
+    --tier-1: #dc2626;
+    --tier-2: #fca5a5;
+    --tier-3: #f1f5f9;
+    --tier-4: #86efac;
+    --tier-5: #16a34a;
+    --tier-0: #64748b;
 
     color-scheme: dark;
   }
