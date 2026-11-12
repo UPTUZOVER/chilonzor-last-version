@@ -7,8 +7,10 @@ winenv/
 __pycache__/
 *.pyc
 *.sqlite3
+!/chilonzor_db.sqlite3
 .env
 media/
+!/media/
 staticfiles/
 node_modules/
 .server_known_hosts
