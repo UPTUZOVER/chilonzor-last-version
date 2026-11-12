@@ -15,6 +15,11 @@ def main():
             "available on your PYTHONPATH environment variable? Did you "
             "forget to activate a virtual environment?"
         ) from exc
+    # Django's development server must serve static files even when a system
+    # DEBUG environment variable disables Django's debug mode. This affects
+    # only runserver; production servers continue to use WhiteNoise.
+    if len(sys.argv) > 1 and sys.argv[1] == 'runserver' and '--insecure' not in sys.argv:
+        sys.argv.append('--insecure')
     execute_from_command_line(sys.argv)
 
 

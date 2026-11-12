@@ -11,3 +11,5 @@ __pycache__/
 media/
 staticfiles/
 node_modules/
+.server_known_hosts
+backups/server_sync_*/
